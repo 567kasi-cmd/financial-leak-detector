@@ -3,38 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscription Leak Detector - Hidden Charges & Financial Leak Detector</title>
-    <meta name="description" content="Track and analyze subscription costs, identify unused services, and calculate annual savings.">
+    <title>Subscription Leak Detector - FinLeak</title>
+    <meta name="description" content="Track and analyze your subscription costs. Find unused services, calculate annual expenses, and identify money leaks from recurring subscriptions.">
+    <meta name="keywords" content="subscription tracker, recurring costs, subscription leak, annual expenses, unused subscriptions">
     <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/credit-card-leak">Credit Card Leak</a>
-            <a href="/loan-leak">Loan Leak</a>
-            <a href="/subscription-leak">Subscription Leak</a>
-        </nav>
-        <h1>Subscription Leak Detector</h1>
-        <p>Find and eliminate unnecessary subscription costs.</p>
-    </header>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">💰 FinLeak</div>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/credit-card-leak">Credit Card</a></li>
+                <li><a href="/emi-calculator">EMI Calculator</a></li>
+                <li><a href="/subscription-leak">Subscriptions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Subscription Leak Detector</h1>
+            <p>Track your recurring subscriptions, find unused services, and calculate your annual subscription expenses</p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Start Tracking</button>
+            </div>
+        </div>
+    </section>
 
     <main>
-        <section>
-            <h2>Coming Soon</h2>
-            <p>This page will feature subscription management tools, including:</p>
-            <ul>
-                <li>Subscription cost tracker</li>
-                <li>Unused service identification</li>
-                <li>Annual cost analysis</li>
-                <li>Cancellation guides</li>
-            </ul>
-            <p>Check back soon for the full feature set!</p>
+        <!-- Input Section -->
+        <section id="calculator" class="calculator-section">
+            <div class="container">
+                <h2>Subscription Tracker</h2>
+                <div class="grid">
+                    <!-- Input Card -->
+                    <div class="card input-card">
+                        <h3>Add Your Subscriptions</h3>
+                        <form id="subscription-form">
+                            <div class="form-group">
+                                <label for="sub-name">Service Name</label>
+                                <input type="text" id="sub-name" placeholder="e.g., Netflix, Spotify, Gym" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sub-cost">Monthly Cost (₹)</label>
+                                <input type="number" id="sub-cost" min="0" step="0.01" placeholder="e.g., 499" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sub-category">Category</label>
+                                <select id="sub-category">
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Music">Music & Audio</option>
+                                    <option value="Fitness">Fitness & Health</option>
+                                    <option value="Software">Software & Tools</option>
+                                    <option value="News">News & Magazines</option>
+                                    <option value="Food">Food & Dining</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sub-used">How often do you use it?</label>
+                                <select id="sub-used">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="rarely">Rarely</option>
+                                    <option value="never">Never</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <span class="btn-text">Add Subscription</span>
+                            </button>
+                        </form>
+
+                        <!-- Subscription List -->
+                        <div id="subscription-list" class="subscription-list">
+                            <h4>Your Subscriptions</h4>
+                            <div id="subscriptions-container">
+                                <p class="empty-state">No subscriptions added yet. Add your first subscription above!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Card -->
+                    <div class="card summary-card">
+                        <h3>Cost Summary</h3>
+                        <div class="summary-item">
+                            <span>Monthly Total</span>
+                            <span id="monthly-total" class="value">₹0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Yearly Total</span>
+                            <span id="yearly-total" class="value">₹0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Number of Services</span>
+                            <span id="service-count" class="value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Average per Service</span>
+                            <span id="average-cost" class="value">₹0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="sub-results" class="results-section hidden">
+            <div class="container">
+                <h2>Your Subscription Analysis</h2>
+
+                <!-- Key Metrics -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <small>Monthly Spending</small>
+                            <h3 id="total-monthly">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">📅</div>
+                        <div class="metric-content">
+                            <small>Annual Cost</small>
+                            <h3 id="total-annual">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">🎯</div>
+                        <div class="metric-content">
+                            <small>Services Count</small>
+                            <h3 id="total-services">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card danger">
+                        <div class="metric-icon">🚨</div>
+                        <div class="metric-content">
+                            <small>Potential Savings</small>
+                            <h3 id="potential-savings">₹0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div class="grid mt-3">
+                    <div class="card">
+                        <h3>Spending by Category</h3>
+                        <canvas id="category-chart"></canvas>
+                    </div>
+
+                    <div class="card">
+                        <h3>Usage Analysis</h3>
+                        <div class="usage-breakdown">
+                            <div class="usage-item">
+                                <span>Daily Use</span>
+                                <span id="daily-use" class="value">0 services</span>
+                            </div>
+                            <div class="usage-item">
+                                <span>Weekly Use</span>
+                                <span id="weekly-use" class="value">0 services</span>
+                            </div>
+                            <div class="usage-item">
+                                <span>Monthly Use</span>
+                                <span id="monthly-use" class="value">0 services</span>
+                            </div>
+                            <div class="usage-item warning">
+                                <span>Rarely Used</span>
+                                <span id="rarely-use" class="value">0 services</span>
+                            </div>
+                            <div class="usage-item danger">
+                                <span>Never Used</span>
+                                <span id="never-use" class="value">0 services</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Expensive Services -->
+                <div class="card mt-3">
+                    <h3>💰 Your Most Expensive Subscriptions</h3>
+                    <div id="expensive-services" class="expensive-list">
+                        <!-- Top services will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Insights Section -->
+                <div class="card mt-3">
+                    <h3>🎯 Subscription Insights & Recommendations</h3>
+                    <ul id="sub-insight-list" class="insight-list"></ul>
+                </div>
+
+                <!-- Cancellation Candidates -->
+                <div class="card mt-3">
+                    <h3>🗑️ Services to Consider Canceling</h3>
+                    <div id="cancellation-list" class="cancellation-list">
+                        <!-- Cancellation recommendations will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Educational Content -->
+        <section id="content" class="content-section">
+            <div class="container">
+                <h2>Understanding Subscription Leaks</h2>
+                <article>
+                    <h3>What Are Subscription Leaks?</h3>
+                    <p>Subscription leaks occur when you pay for services you don't use, forgot about, or could get cheaper elsewhere. The average person wastes ₹10,000-25,000 annually on unused subscriptions.</p>
+
+                    <h3>Common Subscription Leaks</h3>
+                    <ul>
+                        <li><strong>Forgotten Trials:</strong> Free trials that auto-convert to paid subscriptions</li>
+                        <li><strong>Unused Services:</strong> Streaming services you signed up for but never watch</li>
+                        <li><strong>Duplicate Services:</strong> Multiple services offering the same thing</li>
+                        <li><strong>Price Increases:</strong> Services that raised prices without you noticing</li>
+                        <li><strong>Family Plans:</strong> Individual plans when family plans are cheaper</li>
+                    </ul>
+
+                    <h3>How to Find Your Subscriptions</h3>
+                    <p>Most people don't know how many subscriptions they have. Here's how to find them:</p>
+                    <ul>
+                        <li><strong>Credit Card Statements:</strong> Look for recurring charges</li>
+                        <li><strong>Bank Statements:</strong> Check for automatic debits</li>
+                        <li><strong>Email Inbox:</strong> Search for "subscription", "billing", "receipt"</li>
+                        <li><strong>App Stores:</strong> Check iOS/Android subscription settings</li>
+                        <li><strong>Password Manager:</strong> Look for service accounts you may have forgotten</li>
+                    </ul>
+
+                    <h3>Subscription Categories & Average Costs</h3>
+                    <ul>
+                        <li><strong>Entertainment:</strong> ₹500-2,000/month (Netflix, Amazon Prime, Disney+)</li>
+                        <li><strong>Music:</strong> ₹100-500/month (Spotify, Apple Music, YouTube Premium)</li>
+                        <li><strong>Fitness:</strong> ₹500-3,000/month (Gym, Cult.fit, Yoga apps)</li>
+                        <li><strong>Software:</strong> ₹200-5,000/month (Adobe, Microsoft 365, Antivirus)</li>
+                        <li><strong>News:</strong> ₹100-1,000/month (Newspaper, Magazine subscriptions)</li>
+                        <li><strong>Food:</strong> ₹500-2,000/month (Meal kits, Coffee subscriptions)</li>
+                    </ul>
+
+                    <h3>Negotiation Strategies</h3>
+                    <p>Don't just cancel - try negotiating first:</p>
+                    <ul>
+                        <li><strong>Call Customer Service:</strong> Ask for discounts or credits</li>
+                        <li><strong>Mention Competitors:</strong> "I can get this cheaper elsewhere"</li>
+                        <li><strong>Bundle Services:</strong> Combine multiple services for discounts</li>
+                        <li><strong>Annual Payments:</strong> Pay yearly for 1-2 months free</li>
+                        <li><strong>Student Discounts:</strong> Check for educational pricing</li>
+                    </ul>
+
+                    <h3>Reducing Subscription Costs</h3>
+                    <ul>
+                        <li><strong>Free Alternatives:</strong> YouTube instead of paid streaming</li>
+                        <li><strong>Library Services:</strong> Free books, movies, music through libraries</li>
+                        <li><strong>Shared Accounts:</strong> Split costs with family/friends (legally)</li>
+                        <li><strong>Seasonal Cancellations:</strong> Cancel during low-usage periods</li>
+                        <li><strong>App Store Subscriptions:</strong> Check for unused app subscriptions</li>
+                    </ul>
+
+                    <h3>Creating a Subscription Budget</h3>
+                    <p>Set limits to prevent future leaks:</p>
+                    <ul>
+                        <li><strong>Monthly Limit:</strong> Decide maximum spending per month</li>
+                        <li><strong>Annual Review:</strong> Check subscriptions every 6 months</li>
+                        <li><strong>Free Trial Rules:</strong> Only sign up for trials you actually want</li>
+                        <li><strong>Payment Method:</strong> Use virtual cards for trials</li>
+                        <li><strong>Calendar Reminders:</strong> Set reminders for trial expirations</li>
+                    </ul>
+
+                    <h3>The Psychology of Subscriptions</h3>
+                    <p>Why we keep paying for unused services:</p>
+                    <ul>
+                        <li><strong>Sunk Cost Fallacy:</strong> "I've already paid, might as well keep it"</li>
+                        <li><strong>Convenience:</strong> "It's only ₹500/month, no big deal"</li>
+                        <li><strong>Future Value:</strong> "I might use it someday"</li>
+                        <li><strong>Decision Fatigue:</strong> Too many choices, easier to keep status quo</li>
+                        <li><strong>Emotional Attachment:</strong> "I love this service" vs. actual usage</li>
+                    </ul>
+
+                    <h3>Tools for Managing Subscriptions</h3>
+                    <ul>
+                        <li><strong>Truebill:</strong> Automatically tracks and cancels subscriptions</li>
+                        <li><strong>Rocket Money:</strong> Finds and manages recurring charges</li>
+                        <li><strong>Trim:</strong> Negotiates lower rates for your services</li>
+                        <li><strong>BillShark:</strong> Reviews bills and finds savings</li>
+                        <li><strong>Personal Capital:</strong> Tracks all financial accounts</li>
+                    </ul>
+                </article>
+            </div>
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2026 Hidden Charges & Financial Leak Detector. All rights reserved.</p>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#content">Learn</a> | <a href="/">Home</a>
+            </div>
+        </div>
     </footer>
+
+    <script src="../calculations.js"></script>
+    <script src="../insights.js"></script>
+    <script src="../ui.js"></script>
+    <script src="sub-script.js"></script>
 </body>
 </html>

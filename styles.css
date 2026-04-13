@@ -566,3 +566,279 @@ article li {
         grid-template-columns: 1fr;
     }
 }
+
+/* Tenure inputs */
+.tenure-inputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.tenure-inputs input {
+    flex: 1;
+}
+
+/* Formula box */
+.formula-box {
+    background: #f5f7fa;
+    border-left: 4px solid var(--primary);
+    padding: 1rem;
+    margin: 1rem 0;
+    font-family: 'Courier New', monospace;
+}
+
+/* Subscription specific styles */
+.subscription-list {
+    margin-top: 2rem;
+}
+
+.subscription-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid var(--primary);
+}
+
+.sub-info {
+    flex: 1;
+}
+
+.sub-info strong {
+    display: block;
+    color: var(--secondary);
+    margin-bottom: 0.3rem;
+}
+
+.sub-category {
+    background: var(--primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
+.sub-usage {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+
+.sub-usage.usage-daily { background: #27ae60; color: white; }
+.sub-usage.usage-weekly { background: #3498db; color: white; }
+.sub-usage.usage-monthly { background: #f39c12; color: white; }
+.sub-usage.usage-rarely { background: #e74c3c; color: white; }
+.sub-usage.usage-never { background: #95a5a6; color: white; }
+
+.sub-cost {
+    text-align: right;
+    margin-right: 1rem;
+}
+
+.sub-cost .monthly {
+    display: block;
+    font-weight: bold;
+    color: var(--secondary);
+}
+
+.sub-cost .annual {
+    display: block;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* Summary items */
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-item .value {
+    font-weight: bold;
+    color: var(--primary);
+}
+
+/* Usage breakdown */
+.usage-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.usage-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.8rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #ddd;
+}
+
+.usage-item.warning {
+    border-left-color: var(--warning);
+}
+
+.usage-item.danger {
+    border-left-color: var(--danger);
+}
+
+.usage-item .value {
+    font-weight: bold;
+}
+
+/* Expensive services */
+.expensive-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.expensive-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 6px;
+}
+
+.rank {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary);
+    margin-right: 1rem;
+    min-width: 40px;
+}
+
+.service-details {
+    flex: 1;
+}
+
+.service-details strong {
+    display: block;
+    color: var(--secondary);
+    margin-bottom: 0.3rem;
+}
+
+.service-details .category {
+    background: var(--light);
+    color: var(--secondary);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.cost {
+    text-align: right;
+}
+
+.cost .monthly-cost {
+    display: block;
+    font-weight: bold;
+    color: var(--secondary);
+}
+
+.cost .annual-cost {
+    display: block;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* Cancellation list */
+.cancellation-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.cancel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #fee;
+    border: 1px solid #fcc;
+    border-radius: 6px;
+    border-left: 4px solid var(--danger);
+}
+
+.cancel-info strong {
+    display: block;
+    color: var(--secondary);
+    margin-bottom: 0.3rem;
+}
+
+.cancel-reason {
+    color: var(--danger);
+    font-size: 0.9rem;
+}
+
+.cancel-savings {
+    text-align: right;
+}
+
+.cancel-savings .monthly-save {
+    display: block;
+    font-weight: bold;
+    color: var(--danger);
+}
+
+.cancel-savings .annual-save {
+    display: block;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.no-cancellations {
+    text-align: center;
+    color: var(--success);
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* Comparison items */
+.comparison-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.comparison-item:last-child {
+    border-bottom: none;
+}
+
+.comparison-item .value {
+    font-weight: bold;
+    color: var(--primary);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 2rem;
+}

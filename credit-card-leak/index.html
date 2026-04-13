@@ -3,38 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Credit Card Leak Detector - Hidden Charges & Financial Leak Detector</title>
-    <meta name="description" content="Advanced credit card leak detection tool. Analyze hidden charges, interest accumulation, and payment strategies.">
+    <title>Credit Card Leak Detector - FinLeak</title>
+    <meta name="description" content="Advanced credit card leak detection tool. Analyze hidden charges, interest accumulation, and payment strategies with detailed month-by-month breakdown.">
+    <meta name="keywords" content="credit card calculator, debt payoff, interest calculator, financial leak detector">
     <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/credit-card-leak">Credit Card Leak</a>
-            <a href="/loan-leak">Loan Leak</a>
-            <a href="/subscription-leak">Subscription Leak</a>
-        </nav>
-        <h1>Credit Card Leak Detector</h1>
-        <p>Advanced analysis of credit card hidden charges and financial leaks.</p>
-    </header>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">💰 FinLeak</div>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/credit-card-leak">Credit Card</a></li>
+                <li><a href="/emi-calculator">EMI Calculator</a></li>
+                <li><a href="/subscription-leak">Subscriptions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Advanced Credit Card Analysis</h1>
+            <p>Detailed month-by-month debt simulation with insights and payment strategies</p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Start Analysis</button>
+            </div>
+        </div>
+    </section>
 
     <main>
-        <section>
-            <h2>Coming Soon</h2>
-            <p>This page will feature advanced credit card leak detection tools, including:</p>
-            <ul>
-                <li>Detailed interest accumulation analysis</li>
-                <li>Payment strategy comparisons</li>
-                <li>Balance transfer recommendations</li>
-                <li>Historical debt tracking</li>
-            </ul>
-            <p>Check back soon for the full feature set!</p>
+        <!-- Input Section -->
+        <section id="calculator" class="calculator-section">
+            <div class="container">
+                <h2>Credit Card Debt Simulator</h2>
+                <div class="grid">
+                    <!-- Input Card -->
+                    <div class="card input-card">
+                        <h3>Enter Your Credit Card Details</h3>
+                        <form id="cc-form">
+                            <div class="form-group">
+                                <label for="cc-outstanding">Outstanding Amount (₹)</label>
+                                <input type="number" id="cc-outstanding" min="0" step="0.01" placeholder="e.g., 50,000" required>
+                                <small>Your current credit card balance</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cc-rate">Annual Interest Rate (APR %)</label>
+                                <input type="number" id="cc-rate" min="0" step="0.01" placeholder="e.g., 24" required>
+                                <small>Typical: 18-36% for credit cards</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cc-min-payment">Minimum Payment (%)</label>
+                                <input type="number" id="cc-min-payment" min="0" max="100" step="0.01" placeholder="e.g., 2" required>
+                                <small>Usually 2-3% of your balance</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cc-extra-payment">Extra Monthly Payment (₹) - Optional</label>
+                                <input type="number" id="cc-extra-payment" min="0" step="0.01" placeholder="e.g., 10,000">
+                                <small>Additional amount to pay monthly</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <span class="btn-text">Simulate Debt Payoff</span>
+                                <span id="cc-loading-spinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Chart Card -->
+                    <div class="card chart-card hidden" id="cc-chart-card">
+                        <h3>Debt Payoff Trend</h3>
+                        <canvas id="cc-balance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="cc-results" class="results-section hidden">
+            <div class="container">
+                <h2>Your Credit Card Analysis</h2>
+
+                <!-- Key Metrics -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <small>Monthly Interest Rate</small>
+                            <h3 id="cc-monthly-rate">0%</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">⏱️</div>
+                        <div class="metric-content">
+                            <small>Payoff Time</small>
+                            <h3 id="cc-payoff-time">0 months</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">💳</div>
+                        <div class="metric-content">
+                            <small>Total Amount Paid</small>
+                            <h3 id="cc-total-paid">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card danger">
+                        <div class="metric-icon">🚨</div>
+                        <div class="metric-content">
+                            <small>Total Interest (Money Lost)</small>
+                            <h3 id="cc-money-lost">₹0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown Cards -->
+                <div class="grid mt-3">
+                    <div class="card">
+                        <h3>Payment Breakdown</h3>
+                        <div class="breakdown-item">
+                            <span>Principal Amount</span>
+                            <span id="cc-breakdown-principal" class="value">₹0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Total Interest Paid</span>
+                            <span id="cc-breakdown-interest" class="value">₹0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Extra Payments</span>
+                            <span id="cc-breakdown-extra" class="value">₹0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Interest % of Principal</span>
+                            <span id="cc-breakdown-percentage" class="value">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Financial Health</h3>
+                        <div class="risk-meter">
+                            <div class="risk-label">Risk Level: <span id="cc-risk-level">Low</span></div>
+                            <div class="progress-bar">
+                                <div id="cc-risk-bar" class="progress-fill" style="width: 25%"></div>
+                            </div>
+                        </div>
+                        <div class="risk-details" id="cc-risk-details"></div>
+                    </div>
+                </div>
+
+                <!-- Monthly Breakdown Table -->
+                <div class="card mt-3">
+                    <h3>Month-by-Month Breakdown</h3>
+                    <div class="table-container">
+                        <table id="cc-monthly-table" class="monthly-table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Payment</th>
+                                    <th>Interest</th>
+                                    <th>Principal</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cc-table-body">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Insights Section -->
+                <div class="card mt-3">
+                    <h3>🎯 Smart Insights & Recommendations</h3>
+                    <ul id="cc-insight-list" class="insight-list"></ul>
+                </div>
+
+                <!-- Prepayment Analysis -->
+                <div class="card mt-3">
+                    <h3>💡 What If You Paid More?</h3>
+                    <div class="prepayment-scenarios">
+                        <div class="scenario-item">
+                            <h4>Scenario 1: +₹5,000/month</h4>
+                            <p id="cc-scenario-1"></p>
+                        </div>
+                        <div class="scenario-item">
+                            <h4>Scenario 2: +₹10,000/month</h4>
+                            <p id="cc-scenario-2"></p>
+                        </div>
+                        <div class="scenario-item">
+                            <h4>Scenario 3: +₹25,000/month</h4>
+                            <p id="cc-scenario-3"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Educational Content -->
+        <section id="content" class="content-section">
+            <div class="container">
+                <h2>Understanding Credit Card Debt</h2>
+                <article>
+                    <h3>How Credit Card Interest Works</h3>
+                    <p>Credit card interest is calculated using compound interest, which means you pay interest on interest. Here's how it accumulates:</p>
+                    <ul>
+                        <li><strong>Monthly Calculation</strong>: Interest = Outstanding Balance × (APR ÷ 12 ÷ 100)</li>
+                        <li><strong>Compounding Effect</strong>: Each month, interest is added to your balance, increasing the amount that earns interest next month</li>
+                        <li><strong>Minimum Payments</strong>: Banks require only 2-3% of your balance, but this can keep you in debt for years</li>
+                        <li><strong>Grace Period</strong>: Only applies to new purchases, not existing balances</li>
+                    </ul>
+
+                    <h3>Why Minimum Payments Are Dangerous</h3>
+                    <p>Many people only pay the minimum required amount, thinking they're making progress. However:</p>
+                    <ul>
+                        <li>If minimum payment < monthly interest, your debt grows</li>
+                        <li>You end up paying 2-3x the original amount in interest</li>
+                        <li>Debt can take 10+ years to clear with minimum payments</li>
+                        <li>You're essentially paying rent on your own money</li>
+                    </ul>
+
+                    <h3>Smart Debt Payoff Strategies</h3>
+                    <ul>
+                        <li><strong>Pay More Than Minimum</strong>: Aim for 5-10% of balance monthly</li>
+                        <li><strong>Snowball Method</strong>: Pay off smallest debts first for psychological wins</li>
+                        <li><strong>Avalanche Method</strong>: Pay highest interest debts first for maximum savings</li>
+                        <li><strong>Balance Transfer</strong>: Move to 0% APR cards (if you can pay during promotional period)</li>
+                        <li><strong>Negotiate Rates</strong>: Call your issuer and ask for lower APR</li>
+                    </ul>
+
+                    <h3>Credit Card Terms You Should Know</h3>
+                    <ul>
+                        <li><strong>APR (Annual Percentage Rate)</strong>: Total cost of borrowing per year</li>
+                        <li><strong>Grace Period</strong>: Time before interest starts accruing on new purchases</li>
+                        <li><strong>Cash Advance</strong>: Borrowing against your credit limit (usually higher fees)</li>
+                        <li><strong>Foreign Transaction Fee</strong>: Extra charge for international purchases</li>
+                        <li><strong>Annual Fee</strong>: Yearly charge for having the card</li>
+                    </ul>
+                </article>
+            </div>
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2026 Hidden Charges & Financial Leak Detector. All rights reserved.</p>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#content">Learn</a> | <a href="/">Home</a>
+            </div>
+        </div>
     </footer>
+
+    <script src="../calculations.js"></script>
+    <script src="../insights.js"></script>
+    <script src="../ui.js"></script>
+    <script src="cc-script.js"></script>
 </body>
 </html>
