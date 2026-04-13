@@ -19,6 +19,7 @@ function handleEmiFormSubmit(e) {
     const years = parseInt(document.getElementById('loan-tenure-years').value) || 0;
     const months = parseInt(document.getElementById('loan-tenure-months').value) || 0;
     const totalMonths = (years * 12) + months;
+    const monthlyIncome = parseFloat(document.getElementById('monthly-income').value) || null;
 
     // Validate inputs
     if (!validateEmiInputs(loanAmount, interestRate, totalMonths)) {
@@ -36,7 +37,7 @@ function handleEmiFormSubmit(e) {
             const results = calculateEMI(loanAmount, interestRate, totalMonths);
 
             // Display results
-            displayEmiResults(results, loanAmount, interestRate, totalMonths);
+            displayEmiResults(results, loanAmount, interestRate, totalMonths, monthlyIncome);
 
             // Scroll to results
             document.getElementById('emi-results').scrollIntoView({ behavior: 'smooth' });
@@ -55,8 +56,9 @@ function handleEmiFormSubmit(e) {
  * @param {number} loanAmount - Principal amount
  * @param {number} interestRate - Annual interest rate
  * @param {number} totalMonths - Total tenure in months
+ * @param {number|null} monthlyIncome - Monthly income (optional)
  */
-function displayEmiResults(results, loanAmount, interestRate, totalMonths) {
+function displayEmiResults(results, loanAmount, interestRate, totalMonths, monthlyIncome = null) {
     // Update metric cards
     document.getElementById('emi-amount').textContent = `₹${results.emi.toLocaleString('en-IN')}`;
     document.getElementById('total-amount').textContent = `₹${results.totalPayment.toLocaleString('en-IN')}`;
@@ -84,7 +86,7 @@ function displayEmiResults(results, loanAmount, interestRate, totalMonths) {
     populateEmiTable(results.monthlyData);
 
     // Display insights
-    const insights = generateEmiInsights(results, loanAmount, interestRate, totalMonths);
+    const insights = generateEmiInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome);
     displayEmiInsights(insights);
 
     // Display prepayment scenarios
@@ -211,9 +213,10 @@ function populateEmiTable(monthlyData) {
  * @param {number} loanAmount - Principal
  * @param {number} interestRate - Annual rate
  * @param {number} totalMonths - Total months
+ * @param {number|null} monthlyIncome - Monthly income (optional)
  * @returns {array} Insights array
  */
-function generateEmiInsights(results, loanAmount, interestRate, totalMonths) {
+function generateEmiInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
     const insights = [];
     const years = totalMonths / 12;
 
@@ -239,24 +242,42 @@ function generateEmiInsights(results, loanAmount, interestRate, totalMonths) {
         });
     }
 
-    // EMI affordability (assuming 50K monthly income)
-    const monthlyIncome = 50000;
-    const emiRatio = (results.emi / monthlyIncome) * 100;
-    if (emiRatio > 50) {
+    // EMI affordability - only show if monthly income is provided
+    if (monthlyIncome && monthlyIncome > 0) {
+        const emiRatio = (results.emi / monthlyIncome) * 100;
+        if (emiRatio > 50) {
+            insights.push({
+                type: 'danger',
+                icon: '🚨',
+                title: 'High Financial Risk',
+                message: `EMI is ${emiRatio.toFixed(0)}% of your monthly income - this poses a high financial risk.`,
+                action: 'Consider a longer tenure, lower loan amount, or explore ways to increase your income.'
+            });
+        } else if (emiRatio > 30) {
+            insights.push({
+                type: 'warning',
+                icon: '⚠️',
+                title: 'Moderate Burden',
+                message: `EMI takes ${emiRatio.toFixed(0)}% of your monthly income.`,
+                action: 'Ensure you have sufficient buffer for other expenses and emergencies.'
+            });
+        } else {
+            insights.push({
+                type: 'success',
+                icon: '✅',
+                title: 'Healthy EMI Level',
+                message: `EMI is ${emiRatio.toFixed(0)}% of your monthly income - this is within healthy limits.`,
+                action: 'Great! You have good financial breathing room for other expenses.'
+            });
+        }
+    } else {
+        // Generic advisory when income is not provided
         insights.push({
-            type: 'danger',
-            icon: '💸',
-            title: 'EMI Too High',
-            message: `EMI is ${emiRatio.toFixed(0)}% of monthly income - this may strain your finances.`,
-            action: 'Consider a longer tenure or lower loan amount to reduce EMI burden.'
-        });
-    } else if (emiRatio > 30) {
-        insights.push({
-            type: 'warning',
-            icon: '⚠️',
-            title: 'High EMI Ratio',
-            message: `EMI takes ${emiRatio.toFixed(0)}% of your monthly income.`,
-            action: 'Ensure you have buffer for other expenses and emergencies.'
+            type: 'info',
+            icon: '💡',
+            title: 'EMI Affordability Check',
+            message: 'Ideally, EMI should be less than 30-40% of your monthly income.',
+            action: 'Enter your monthly income above to get personalized affordability insights.'
         });
     }
 
