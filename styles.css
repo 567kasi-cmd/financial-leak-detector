@@ -842,3 +842,183 @@ article li {
     font-style: italic;
     padding: 2rem;
 }
+
+/* Financial Health Score */
+.health-score-display {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%);
+    border-radius: 12px;
+    border: 2px solid #e1e8ed;
+}
+
+.health-score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.health-score-circle::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: conic-gradient(
+        currentColor 0deg,
+        transparent calc(var(--score) * 3.6deg),
+        transparent calc(var(--score) * 3.6deg + 10deg)
+    );
+    mask: radial-gradient(circle at center, transparent 45%, black 55%);
+    -webkit-mask: radial-gradient(circle at center, transparent 45%, black 55%);
+}
+
+.health-score-number {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    z-index: 1;
+    position: relative;
+}
+
+.health-score-label {
+    font-size: 0.9rem;
+    text-align: center;
+    z-index: 1;
+    position: relative;
+}
+
+.health-score-details {
+    flex: 1;
+}
+
+.health-factor {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.health-factor:last-child {
+    border-bottom: none;
+}
+
+.health-factor span:first-child {
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.health-factor span:last-child {
+    color: var(--primary);
+    font-weight: bold;
+}
+
+/* Export buttons */
+.export-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Interactive scenario slider */
+.interactive-scenario {
+    border: 2px solid var(--primary) !important;
+    background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%) !important;
+}
+
+.slider-values {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+#extra-payment-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#extra-payment-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+#extra-payment-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Insight savings */
+.insight-savings {
+    background: #e8f8e8;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-weight: bold;
+    color: var(--success);
+    border: 1px solid #c3e6c3;
+}
+
+/* Sticky results */
+.sticky-results {
+    position: sticky;
+    top: 80px;
+    z-index: 10;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Enhanced chart responsiveness */
+@media (max-width: 768px) {
+    .health-score-display {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .health-score-circle {
+        width: 100px;
+        height: 100px;
+    }
+
+    .health-score-number {
+        font-size: 2rem;
+    }
+
+    .export-buttons {
+        flex-direction: column;
+    }
+
+    .export-buttons .btn {
+        width: 100%;
+    }
+}

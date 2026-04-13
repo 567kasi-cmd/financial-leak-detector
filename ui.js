@@ -1,45 +1,189 @@
-// ui.js - UI rendering and interaction management
+// ui.js - Enhanced UI rendering and interaction management
 
 let pieChart = null;
 let compositionChart = null;
 let balanceTrendChart = null;
+let categoryChart = null;
 
 /**
- * Display calculation results in UI
+ * Display calculation results in UI with enhanced features
  * @param {object} results - Calculation results
  * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual interest rate
+ * @param {number} minPaymentPercent - Minimum payment percentage
+ * @param {number} extraPayment - Extra payment amount
  */
 function displayResults(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
-    // Update metric cards
+    // Update metric cards with enhanced formatting
     document.getElementById('monthly-rate').textContent = `${results.monthlyRate}%`;
-    document.getElementById('payoff-time').textContent = `${results.years}y ${results.remainingMonths}m`;
-    document.getElementById('total-paid').textContent = `₹${results.totalPaid.toLocaleString('en-IN')}`;
-    document.getElementById('money-lost').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
+    document.getElementById('payoff-time').textContent = formatPayoffTime(results);
+    document.getElementById('total-paid').textContent = formatCurrency(results.totalPaid);
+    document.getElementById('money-lost').textContent = formatCurrency(results.totalInterest);
 
-    // Update breakdown
-    document.getElementById('breakdown-principal').textContent = `₹${principal.toLocaleString('en-IN')}`;
-    document.getElementById('breakdown-interest').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
-    document.getElementById('breakdown-extra').textContent = `₹${(extraPayment * results.months).toLocaleString('en-IN')}`;
+    // Update breakdown with enhanced styling
+    document.getElementById('breakdown-principal').textContent = formatCurrency(principal);
+    document.getElementById('breakdown-interest').textContent = formatCurrency(results.totalInterest);
+    document.getElementById('breakdown-extra').textContent = formatCurrency(extraPayment * results.months);
 
     const interestPercent = ((results.totalInterest / principal) * 100).toFixed(0);
     document.getElementById('breakdown-percentage').textContent = `${interestPercent}%`;
 
+    // Calculate and update financial health score
+    const healthScore = calculateFinancialHealthScore(results, principal, annualRate, minPaymentPercent, extraPayment);
+    updateFinancialHealthScore(healthScore);
+
     // Update risk meter
-    const riskAssessment = assessDebtRisk(principal, 50000); // Assuming ₹50K monthly income
+    const riskAssessment = assessDebtRisk(principal, 50000);
     updateRiskMeter(riskAssessment.riskScore, riskAssessment.riskLevel, riskAssessment.advice);
 
-    // Update charts
-    updateCharts(results, principal);
+    // Update charts with enhanced data
+    updateCharts(results, principal, extraPayment);
 
-    // Display insights
-    const insights = generateInsights(results, principal, annualRate, minPaymentPercent, extraPayment);
+    // Display enhanced insights
+    const insights = generateEnhancedInsights(results, principal, annualRate, minPaymentPercent, extraPayment);
     displayInsights(insights);
 
-    // Display scenarios
+    // Display prepayment scenarios with interactive elements
     displayPrepaymentScenarios(results, principal, annualRate, minPaymentPercent);
 
-    // Show results section
-    document.getElementById('results').classList.remove('hidden');
+    // Add export functionality
+    addExportButtons(results, principal, annualRate, minPaymentPercent, extraPayment);
+
+    // Show results section with smooth animation
+    showResultsSection();
+
+    // Add sticky behavior to results
+    makeResultsSticky();
+}
+
+/**
+ * Format payoff time with better readability
+ * @param {object} results - Calculation results
+ * @returns {string} Formatted time string
+ */
+function formatPayoffTime(results) {
+    if (results.months <= 12) {
+        return `${results.months} months`;
+    } else if (results.months <= 24) {
+        return `${results.years} year ${results.remainingMonths} months`;
+    } else {
+        return `${results.years} years ${results.remainingMonths} months`;
+    }
+}
+
+/**
+ * Format currency with Indian numbering
+ * @param {number} amount - Amount to format
+ * @returns {string} Formatted currency string
+ */
+function formatCurrency(amount) {
+    return `₹${amount.toLocaleString('en-IN')}`;
+}
+
+/**
+ * Calculate comprehensive financial health score
+ * @param {object} results - Calculation results
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual rate
+ * @param {number} minPaymentPercent - Min payment percent
+ * @param {number} extraPayment - Extra payment
+ * @returns {object} Health score data
+ */
+function calculateFinancialHealthScore(results, principal, annualRate, minPaymentPercent, extraPayment) {
+    let score = 100;
+
+    // Interest burden (0-30 points)
+    const interestRatio = results.totalInterest / principal;
+    if (interestRatio > 0.5) score -= 30;
+    else if (interestRatio > 0.3) score -= 20;
+    else if (interestRatio > 0.2) score -= 10;
+
+    // Tenure length (0-25 points)
+    if (results.months > 60) score -= 25;
+    else if (results.months > 36) score -= 15;
+    else if (results.months > 24) score -= 10;
+
+    // Payment behavior (0-20 points)
+    const monthlyRate = annualRate / 100 / 12;
+    const firstMonthInterest = principal * monthlyRate;
+    const minPaymentAmount = principal * (minPaymentPercent / 100);
+
+    if (minPaymentAmount < firstMonthInterest) score -= 20; // Debt trap
+    else if (extraPayment > 0) score += 10; // Good behavior
+
+    // Interest rate (0-15 points)
+    if (annualRate > 30) score -= 15;
+    else if (annualRate > 20) score -= 10;
+    else if (annualRate > 15) score -= 5;
+
+    // Extra payment bonus (0-10 points)
+    if (extraPayment > principal * 0.05) score += 10;
+    else if (extraPayment > 0) score += 5;
+
+    score = Math.max(0, Math.min(100, score));
+
+    let level = 'Excellent';
+    let color = '#27ae60';
+    let icon = '🟢';
+
+    if (score < 30) {
+        level = 'High Risk';
+        color = '#e74c3c';
+        icon = '🔴';
+    } else if (score < 60) {
+        level = 'Moderate Risk';
+        color = '#f39c12';
+        icon = '🟡';
+    } else if (score < 80) {
+        level = 'Good';
+        color = '#3498db';
+        icon = '🟢';
+    }
+
+    return {
+        score: score,
+        level: level,
+        color: color,
+        icon: icon,
+        factors: {
+            interestBurden: interestRatio,
+            tenure: results.months,
+            paymentBehavior: extraPayment > 0,
+            interestRate: annualRate
+        }
+    };
+}
+
+/**
+ * Update financial health score display
+ * @param {object} healthData - Health score data
+ */
+function updateFinancialHealthScore(healthData) {
+    const healthElement = document.getElementById('financial-health-score');
+    if (!healthElement) return;
+
+    healthElement.innerHTML = `
+        <div class="health-score-display">
+            <div class="health-score-circle" style="background: ${healthData.color}">
+                <div class="health-score-number">${healthData.score}</div>
+                <div class="health-score-label">${healthData.level}</div>
+            </div>
+            <div class="health-score-details">
+                <div class="health-factor">
+                    <span>Interest Burden</span>
+                    <span>${(healthData.factors.interestBurden * 100).toFixed(0)}%</span>
+                </div>
+                <div class="health-factor">
+                    <span>Tenure</span>
+                    <span>${healthData.factors.tenure} months</span>
+                </div>
+                <div class="health-factor">
+                    <span>Extra Payments</span>
+                    <span>${healthData.factors.paymentBehavior ? 'Yes' : 'No'}</span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -66,14 +210,15 @@ function updateRiskMeter(riskScore, riskLevel, advice) {
 }
 
 /**
- * Update all charts
+ * Update all charts with enhanced data
  * @param {object} results - Calculation results
  * @param {number} principal - Principal amount
+ * @param {number} extraPayment - Extra payment amount
  */
-function updateCharts(results, principal) {
+function updateCharts(results, principal, extraPayment = 0) {
     updatePieChart(principal, results.totalInterest);
-    updateCompositionChart(principal, results.totalInterest);
-    updateBalanceTrendChart(results.monthlyDataLimited);
+    updateCompositionChart(principal, results.totalInterest, extraPayment);
+    updateBalanceTrendChart(results.monthlyDataLimited, extraPayment);
 }
 
 /**
@@ -97,14 +242,29 @@ function updatePieChart(principal, totalInterest) {
                 data: [principal, totalInterest],
                 backgroundColor: ['#3498db', '#e74c3c'],
                 borderColor: '#fff',
-                borderWidth: 2
+                borderWidth: 3,
+                hoverBorderWidth: 5
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const percentage = ((value / (principal + totalInterest)) * 100).toFixed(1);
+                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
@@ -112,11 +272,12 @@ function updatePieChart(principal, totalInterest) {
 }
 
 /**
- * Update composition bar chart
+ * Update composition bar chart with extra payment
  * @param {number} principal - Principal amount
  * @param {number} totalInterest - Total interest
+ * @param {number} extraPayment - Extra payment amount
  */
-function updateCompositionChart(principal, totalInterest) {
+function updateCompositionChart(principal, totalInterest, extraPayment = 0) {
     const ctx = document.getElementById('composition-chart');
     if (!ctx) return;
 
@@ -124,34 +285,57 @@ function updateCompositionChart(principal, totalInterest) {
         compositionChart.destroy();
     }
 
+    const totalExtra = extraPayment * Math.min(60, Math.ceil((principal + totalInterest) / (principal * 0.02 + extraPayment))); // Estimate months
+
     compositionChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Amount Breakdown'],
+            labels: ['Payment Breakdown'],
             datasets: [
                 {
                     label: 'Principal',
                     data: [principal],
-                    backgroundColor: '#3498db'
+                    backgroundColor: '#3498db',
+                    borderRadius: 4
                 },
                 {
                     label: 'Interest',
                     data: [totalInterest],
-                    backgroundColor: '#e74c3c'
+                    backgroundColor: '#e74c3c',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Extra Payments',
+                    data: [totalExtra],
+                    backgroundColor: '#27ae60',
+                    borderRadius: 4
                 }
             ]
         },
         options: {
             indexAxis: 'y',
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${formatCurrency(context.parsed.x)}`;
+                        }
+                    }
                 }
             },
             scales: {
                 x: {
-                    stacked: true
+                    stacked: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
                 }
             }
         }
@@ -159,10 +343,11 @@ function updateCompositionChart(principal, totalInterest) {
 }
 
 /**
- * Update balance trend line chart
+ * Update balance trend line chart with enhanced features
  * @param {array} monthlyData - Monthly data points
+ * @param {number} extraPayment - Extra payment amount
  */
-function updateBalanceTrendChart(monthlyData) {
+function updateBalanceTrendChart(monthlyData, extraPayment = 0) {
     const ctx = document.getElementById('balance-trend-chart');
     if (!ctx) return;
 
@@ -170,33 +355,96 @@ function updateBalanceTrendChart(monthlyData) {
         balanceTrendChart.destroy();
     }
 
-    const labels = monthlyData.map(d => d.month % 12 === 0 ? `${d.month / 12}y` : '');
-    const balances = monthlyData.map(d => d.balance);
+    const labels = [];
+    const balances = [];
+    const interestData = [];
+    const paymentData = [];
+
+    monthlyData.forEach(data => {
+        labels.push(data.month % 12 === 0 ? `${data.month / 12}y` : '');
+        balances.push(data.balance);
+        interestData.push(data.interest);
+        paymentData.push(data.payment);
+    });
 
     balanceTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Outstanding Balance',
-                data: balances,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0
-            }]
+            datasets: [
+                {
+                    label: 'Outstanding Balance',
+                    data: balances,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Monthly Interest',
+                    data: interestData,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    yAxisID: 'y1',
+                    hidden: true // Hidden by default
+                }
+            ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
-                    display: true
+                    display: true,
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return `Balance: ${formatCurrency(context.parsed.y)}`;
+                            } else {
+                                return `Interest: ${formatCurrency(context.parsed.y)}`;
+                            }
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Balance (₹)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: false,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Interest (₹)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
                 }
             }
         }
@@ -204,7 +452,7 @@ function updateBalanceTrendChart(monthlyData) {
 }
 
 /**
- * Display insights as list items
+ * Display enhanced insights with better formatting
  * @param {array} insights - Array of insight objects
  */
 function displayInsights(insights) {
@@ -222,6 +470,7 @@ function displayInsights(insights) {
             </div>
             <p class="insight-message">${insight.message}</p>
             <p class="insight-action"><strong>Action:</strong> ${insight.action}</p>
+            ${insight.savings ? `<div class="insight-savings">💰 Potential Savings: ${formatCurrency(insight.savings)}</div>` : ''}
         `;
 
         list.appendChild(li);
@@ -229,7 +478,7 @@ function displayInsights(insights) {
 }
 
 /**
- * Display prepayment scenarios
+ * Display prepayment scenarios with interactive sliders
  * @param {object} results - Current results
  * @param {number} principal - Principal amount
  * @param {number} annualRate - Annual rate
@@ -247,8 +496,152 @@ function displayPrepaymentScenarios(results, principal, annualRate, minPaymentPe
         const monthsSaved = results.months - simulated.months;
         const interestSaved = results.totalInterest - simulated.totalInterest;
 
-        const text = `Clear in ${simulated.months} months (${monthsSaved} months faster) | Save ₹${interestSaved.toLocaleString('en-IN')} in interest`;
+        const text = `Clear in ${simulated.months} months (${monthsSaved} months faster) | Save ${formatCurrency(interestSaved)} in interest`;
         document.getElementById(scenario.element).textContent = text;
+    });
+
+    // Add interactive slider for custom scenarios
+    addInteractiveSlider(results, principal, annualRate, minPaymentPercent);
+}
+
+/**
+ * Add interactive slider for custom prepayment scenarios
+ * @param {object} results - Current results
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual rate
+ * @param {number} minPaymentPercent - Min payment percent
+ */
+function addInteractiveSlider(results, principal, annualRate, minPaymentPercent) {
+    const sliderContainer = document.querySelector('.prepayment-scenarios');
+    if (!sliderContainer) return;
+
+    const sliderDiv = document.createElement('div');
+    sliderDiv.className = 'scenario-item interactive-scenario';
+    sliderDiv.innerHTML = `
+        <h4>🎚️ Custom Extra Payment</h4>
+        <input type="range" id="extra-payment-slider" min="0" max="${principal * 0.1}" step="1000" value="0">
+        <div class="slider-values">
+            <span>₹0</span>
+            <span id="slider-value">₹0</span>
+            <span>${formatCurrency(principal * 0.1)}</span>
+        </div>
+        <p id="custom-scenario-result">Add extra payment above to see results</p>
+    `;
+
+    sliderContainer.appendChild(sliderDiv);
+
+    // Add slider event listener
+    const slider = document.getElementById('extra-payment-slider');
+    const valueDisplay = document.getElementById('slider-value');
+    const resultDisplay = document.getElementById('custom-scenario-result');
+
+    slider.addEventListener('input', function() {
+        const extraAmount = parseInt(this.value);
+        valueDisplay.textContent = formatCurrency(extraAmount);
+
+        if (extraAmount > 0) {
+            const simulated = simulateDebtPayoff(principal, annualRate, minPaymentPercent, extraAmount);
+            const monthsSaved = results.months - simulated.months;
+            const interestSaved = results.totalInterest - simulated.totalInterest;
+
+            resultDisplay.textContent = `Clear in ${simulated.months} months (${monthsSaved} months faster) | Save ${formatCurrency(interestSaved)} in interest`;
+        } else {
+            resultDisplay.textContent = 'Add extra payment above to see results';
+        }
+    });
+}
+
+/**
+ * Add export and share functionality
+ * @param {object} results - Calculation results
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual rate
+ * @param {number} minPaymentPercent - Min payment percent
+ * @param {number} extraPayment - Extra payment
+ */
+function addExportButtons(results, principal, annualRate, minPaymentPercent, extraPayment) {
+    const resultsSection = document.getElementById('results');
+    if (!resultsSection) return;
+
+    // Remove existing export buttons
+    const existingButtons = resultsSection.querySelector('.export-buttons');
+    if (existingButtons) existingButtons.remove();
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'export-buttons';
+    buttonContainer.innerHTML = `
+        <button class="btn btn-secondary" onclick="exportToPDF(results, principal, annualRate, minPaymentPercent, extraPayment)">
+            📄 Download Report
+        </button>
+        <button class="btn btn-secondary" onclick="shareResults(results, principal)">
+            📤 Share Results
+        </button>
+    `;
+
+    // Insert after metrics grid
+    const metricsGrid = resultsSection.querySelector('.metrics-grid');
+    if (metricsGrid) {
+        metricsGrid.insertAdjacentElement('afterend', buttonContainer);
+    }
+}
+
+/**
+ * Export results to PDF (placeholder - would need pdf library)
+ * @param {object} results - Results data
+ * @param {number} principal - Principal
+ * @param {number} annualRate - Rate
+ * @param {number} minPaymentPercent - Min payment %
+ * @param {number} extraPayment - Extra payment
+ */
+function exportToPDF(results, principal, annualRate, minPaymentPercent, extraPayment) {
+    alert('PDF export feature would be implemented with a library like jsPDF. This is a placeholder.');
+}
+
+/**
+ * Share results (placeholder)
+ * @param {object} results - Results data
+ * @param {number} principal - Principal
+ */
+function shareResults(results, principal) {
+    const shareText = `My credit card analysis: ₹${principal.toLocaleString('en-IN')} debt at ${results.monthlyRate}% monthly rate. Payoff in ${results.months} months, total interest ₹${results.totalInterest.toLocaleString('en-IN')}. Check out FinLeak for your financial analysis!`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'Credit Card Analysis',
+            text: shareText,
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(shareText).then(() => {
+            alert('Results copied to clipboard!');
+        });
+    }
+}
+
+/**
+ * Show results section with smooth animation
+ */
+function showResultsSection() {
+    const resultsSection = document.getElementById('results');
+    resultsSection.classList.remove('hidden');
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Make results section sticky on scroll
+ */
+function makeResultsSticky() {
+    const resultsSection = document.getElementById('results');
+    if (!resultsSection) return;
+
+    window.addEventListener('scroll', function() {
+        const rect = resultsSection.getBoundingClientRect();
+        if (rect.top <= 100) {
+            resultsSection.classList.add('sticky-results');
+        } else {
+            resultsSection.classList.remove('sticky-results');
+        }
     });
 }
 

@@ -132,6 +132,159 @@ function generateInsights(results, principal, annualRate, minPaymentPercent, ext
 }
 
 /**
+ * Generate enhanced insights with actionable recommendations and savings calculations
+ * @param {object} results - Calculation results
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual interest rate
+ * @param {number} minPaymentPercent - Minimum payment percentage
+ * @param {number} extraPayment - Extra payment amount
+ * @returns {array} Array of enhanced insight objects
+ */
+function generateEnhancedInsights(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
+    const insights = [];
+    const monthlyRate = annualRate / 100 / 12;
+    const firstMonthInterest = principal * monthlyRate;
+    const minPaymentAmount = principal * (minPaymentPercent / 100);
+
+    // Critical Debt Trap Insight
+    if (minPaymentAmount < firstMonthInterest) {
+        const requiredPayment = Math.ceil(firstMonthInterest + 1);
+        const increaseNeeded = requiredPayment - minPaymentAmount;
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, requiredPayment);
+
+        insights.push({
+            type: 'danger',
+            icon: '🚨',
+            title: 'CRITICAL: Debt Trap Detected',
+            message: `Your minimum payment (₹${minPaymentAmount.toLocaleString('en-IN')}) is LESS than monthly interest (₹${firstMonthInterest.toFixed(0).toLocaleString('en-IN')}). Your debt is GROWING every month!`,
+            action: `Increase your monthly payment by at least ₹${increaseNeeded.toLocaleString('en-IN')} to break the cycle.`,
+            savings: savings.interestSaved
+        });
+    }
+
+    // High Interest Burden
+    const interestRatio = results.totalInterest / principal;
+    if (interestRatio > 0.7) {
+        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
+
+        insights.push({
+            type: 'danger',
+            icon: '💸',
+            title: 'Extremely High Interest Burden',
+            message: `You'll pay ${interestRatio.toFixed(1)}x your principal in interest alone. This is extremely expensive debt.`,
+            action: `Pay at least ₹${optimalPayment.toLocaleString('en-IN')}/month to reduce interest to a reasonable level.`,
+            savings: savings.interestSaved
+        });
+    } else if (interestRatio > 0.5) {
+        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
+
+        insights.push({
+            type: 'warning',
+            icon: '⚠️',
+            title: 'High Interest Payments',
+            message: `Total interest is ${interestRatio.toFixed(1)}x your principal amount.`,
+            action: `Consider increasing payments to ₹${optimalPayment.toLocaleString('en-IN')}/month.`,
+            savings: savings.interestSaved
+        });
+    }
+
+    // Long Payoff Period
+    if (results.months > 60) {
+        const aggressivePayment = principal * 0.05; // 5% of principal
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, aggressivePayment);
+
+        insights.push({
+            type: 'danger',
+            icon: '⏳',
+            title: 'Very Long Payoff Timeline',
+            message: `It will take ${results.years} years ${results.remainingMonths} months to clear this debt with current payments.`,
+            action: `Pay ₹${aggressivePayment.toLocaleString('en-IN')}/month extra to clear debt in just ${savings.monthsSaved} months.`,
+            savings: savings.interestSaved
+        });
+    } else if (results.months > 36) {
+        const moderatePayment = principal * 0.03; // 3% of principal
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, moderatePayment);
+
+        insights.push({
+            type: 'warning',
+            icon: '📅',
+            title: 'Extended Payoff Period',
+            message: `Taking ${results.years} years to repay increases total interest significantly.`,
+            action: `Add ₹${moderatePayment.toLocaleString('en-IN')}/month to save ${savings.monthsSaved} months.`,
+            savings: savings.interestSaved
+        });
+    }
+
+    // Extra Payment Impact
+    if (extraPayment > 0) {
+        const withoutExtra = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
+        const interestSaved = withoutExtra.totalInterest - results.totalInterest;
+        const monthsSaved = withoutExtra.months - results.months;
+
+        insights.push({
+            type: 'success',
+            icon: '💚',
+            title: 'Extra Payment Impact',
+            message: `Your ₹${extraPayment.toLocaleString('en-IN')}/month extra payment saves you ₹${interestSaved.toLocaleString('en-IN')} in interest and ${monthsSaved} months!`,
+            action: 'Excellent strategy! Keep up the extra payments to accelerate debt freedom.',
+            savings: interestSaved
+        });
+    }
+
+    // Optimal Payment Suggestion
+    if (results.months > 12 && extraPayment === 0) {
+        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
+        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
+
+        insights.push({
+            type: 'info',
+            icon: '💡',
+            title: 'Optimal Payment Strategy',
+            message: `Pay ₹${optimalPayment.toLocaleString('en-IN')}/month to clear debt in 12 months instead of ${results.months} months.`,
+            action: `This would save you ₹${savings.interestSaved.toLocaleString('en-IN')} in interest.`,
+            savings: savings.interestSaved
+        });
+    }
+
+    // Interest Rate Analysis
+    if (annualRate > 25) {
+        insights.push({
+            type: 'warning',
+            icon: '📈',
+            title: 'High Interest Rate',
+            message: `${annualRate}% APR is very high. Consider balance transfer options.`,
+            action: 'Look for 0% APR balance transfer cards to save significantly on interest.'
+        });
+    }
+
+    // Positive Feedback
+    if (results.months <= 12 && interestRatio < 0.3) {
+        insights.push({
+            type: 'success',
+            icon: '🎉',
+            title: 'Excellent Debt Management',
+            message: 'Your debt payoff strategy is excellent! You\'re managing this very well.',
+            action: 'Keep up the great work. Consider building an emergency fund next.'
+        });
+    }
+
+    // Minimum viable insights
+    if (insights.length === 0) {
+        insights.push({
+            type: 'safe',
+            icon: '✅',
+            title: 'Manageable Debt Situation',
+            message: 'Your debt situation is manageable with current payment strategy.',
+            action: 'Monitor your progress monthly and consider small payment increases when possible.'
+        });
+    }
+
+    return insights;
+}
+
+/**
  * Generate recommendations based on risk level
  * @param {number} riskScore - Risk score (0-100)
  * @returns {array} Personalized recommendations
@@ -169,4 +322,42 @@ function formatCurrency(amount) {
     return amount.toLocaleString('en-IN', {
         maximumFractionDigits: 0
     });
+}
+
+/**
+ * Calculate optimal monthly payment for 12-month payoff
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual rate
+ * @param {number} minPaymentPercent - Min payment percent
+ * @returns {number} Optimal monthly payment
+ */
+function calculateOptimalPayment(principal, annualRate, minPaymentPercent) {
+    const monthlyRate = annualRate / 100 / 12;
+    const minPayment = principal * (minPaymentPercent / 100);
+
+    // Calculate payment needed for 12-month payoff
+    // Formula: EMI = [P x R x (1+R)^N] / [(1+R)^N - 1]
+    const n = 12; // 12 months
+    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+
+    return Math.max(minPayment, Math.ceil(emi));
+}
+
+/**
+ * Calculate potential savings with increased payment
+ * @param {number} principal - Principal amount
+ * @param {number} annualRate - Annual rate
+ * @param {number} minPaymentPercent - Min payment percent
+ * @param {number} increasedPayment - Increased monthly payment
+ * @returns {object} Savings data
+ */
+function calculatePotentialSavings(principal, annualRate, minPaymentPercent, increasedPayment) {
+    const current = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
+    const improved = simulateDebtPayoff(principal, annualRate, minPaymentPercent, increasedPayment);
+
+    return {
+        interestSaved: current.totalInterest - improved.totalInterest,
+        monthsSaved: current.months - improved.months,
+        totalSaved: (current.totalInterest - improved.totalInterest) + (increasedPayment * improved.months)
+    };
 }

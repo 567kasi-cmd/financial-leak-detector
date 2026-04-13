@@ -37,6 +37,10 @@ function handleFormSubmit(e) {
             // Display results
             displayResults(results, outstanding, annualRate, minPaymentPercent, extraPayment);
 
+            // Display insights
+            const insights = generateEnhancedInsights(results, outstanding, annualRate, minPaymentPercent, extraPayment);
+            displayInsights(insights);
+
             // Scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 
