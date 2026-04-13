@@ -183,6 +183,34 @@
                     </div>
                 </div>
 
+                <!-- Amortization Schedule -->
+                <div class="card mt-3">
+                    <h3>📅 Amortization Schedule</h3>
+                    <div class="schedule-toggle">
+                        <button id="toggle-full" class="btn btn-secondary btn-small active">Full Schedule</button>
+                        <button id="toggle-yearly" class="btn btn-secondary btn-small">Yearly Summary</button>
+                    </div>
+                    <div class="amortization-container">
+                        <table id="amortization-table" class="amortization-table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>EMI</th>
+                                    <th>Principal</th>
+                                    <th>Interest</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="amortization-body">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                            <tfoot id="amortization-footer">
+                                <!-- Summary row will be added here -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Insights Section -->
                 <div class="card mt-3">
                     <h3>🎯 Smart Insights & Recommendations</h3>

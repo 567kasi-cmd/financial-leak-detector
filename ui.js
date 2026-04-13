@@ -46,6 +46,12 @@ function displayResults(results, principal, annualRate, minPaymentPercent, extra
     // Display prepayment scenarios with interactive elements
     displayPrepaymentScenarios(results, principal, annualRate, minPaymentPercent);
 
+    // Display amortization schedule
+    displayAmortizationSchedule(results);
+
+    // Set up schedule toggle
+    setupScheduleToggle(results);
+
     // Add export functionality
     addExportButtons(results, principal, annualRate, minPaymentPercent, extraPayment);
 
@@ -663,4 +669,159 @@ function hideLoading() {
     if (spinner) {
         spinner.classList.add('hidden');
     }
+}
+
+/**
+ * Display amortization schedule in a professional table
+ * @param {object} results - Calculation results with monthlyData
+ * @param {string} mode - 'full' for monthly, 'yearly' for annual summary
+ */
+function displayAmortizationSchedule(results, mode = 'full') {
+    const tbody = document.getElementById('amortization-body');
+    const tfoot = document.getElementById('amortization-footer');
+    const thead = document.querySelector('.amortization-table thead tr');
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+
+    if (mode === 'yearly') {
+        // Change header for yearly
+        thead.innerHTML = `
+            <th>Year</th>
+            <th>Total EMI</th>
+            <th>Total Principal</th>
+            <th>Total Interest</th>
+            <th>Ending Balance</th>
+        `;
+
+        // Aggregate by year
+        const yearlyData = {};
+        results.monthlyData.forEach(data => {
+            const year = Math.ceil(data.month / 12);
+            if (!yearlyData[year]) {
+                yearlyData[year] = {
+                    year: year,
+                    totalPayment: 0,
+                    totalPrincipal: 0,
+                    totalInterest: 0,
+                    balance: data.balance
+                };
+            }
+            yearlyData[year].totalPayment += data.payment;
+            yearlyData[year].totalPrincipal += data.payment - data.interest;
+            yearlyData[year].totalInterest += data.interest;
+        });
+
+        Object.values(yearlyData).forEach(data => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${data.year}</td>
+                <td class="currency">${formatCurrency(data.totalPayment)}</td>
+                <td class="currency principal">${formatCurrency(data.totalPrincipal)}</td>
+                <td class="currency interest">${formatCurrency(data.totalInterest)}</td>
+                <td class="currency balance">${formatCurrency(data.balance)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Summary for yearly
+        const totalPrincipal = Object.values(yearlyData).reduce((sum, y) => sum + y.totalPrincipal, 0);
+        const totalInterest = Object.values(yearlyData).reduce((sum, y) => sum + y.totalInterest, 0);
+        const summaryRow = document.createElement('tr');
+        summaryRow.className = 'summary-row';
+        summaryRow.innerHTML = `
+            <td><strong>Total</strong></td>
+            <td class="currency"><strong>${formatCurrency(results.totalPaid)}</strong></td>
+            <td class="currency principal"><strong>${formatCurrency(totalPrincipal)}</strong></td>
+            <td class="currency interest"><strong>${formatCurrency(totalInterest)}</strong></td>
+            <td class="currency balance"><strong>-</strong></td>
+        `;
+        tfoot.appendChild(summaryRow);
+
+    } else {
+        // Full monthly schedule
+        thead.innerHTML = `
+            <th>Month</th>
+            <th>EMI</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Balance</th>
+        `;
+
+        // Limit to first 60 months for performance, or all if less
+        const dataToShow = results.monthlyData.slice(0, Math.min(results.monthlyData.length, 60));
+
+        let totalPrincipalPaid = 0;
+        let totalInterestPaid = 0;
+
+        dataToShow.forEach(data => {
+            const principalPaid = data.payment - data.interest;
+            totalPrincipalPaid += principalPaid;
+            totalInterestPaid += data.interest;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${data.month}</td>
+                <td class="currency">${formatCurrency(data.payment)}</td>
+                <td class="currency principal">${formatCurrency(principalPaid)}</td>
+                <td class="currency interest">${formatCurrency(data.interest)}</td>
+                <td class="currency balance">${formatCurrency(data.balance)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Add summary row
+        const summaryRow = document.createElement('tr');
+        summaryRow.className = 'summary-row';
+        summaryRow.innerHTML = `
+            <td><strong>Total</strong></td>
+            <td class="currency"><strong>${formatCurrency(results.totalPaid)}</strong></td>
+            <td class="currency principal"><strong>${formatCurrency(totalPrincipalPaid)}</strong></td>
+            <td class="currency interest"><strong>${formatCurrency(totalInterestPaid)}</strong></td>
+            <td class="currency balance"><strong>-</strong></td>
+        `;
+        tfoot.appendChild(summaryRow);
+
+        // If more data, add note
+        if (results.monthlyData.length > 60) {
+            const noteRow = document.createElement('tr');
+            noteRow.innerHTML = `<td colspan="5" style="text-align: center; font-style: italic;">Showing first 60 months. Full schedule available in export.</td>`;
+            tfoot.appendChild(noteRow);
+        }
+    }
+}
+
+/**
+ * Set up schedule toggle buttons
+ * @param {object} results - Calculation results
+ */
+function setupScheduleToggle(results) {
+    const toggleFull = document.getElementById('toggle-full');
+    const toggleYearly = document.getElementById('toggle-yearly');
+
+    if (!toggleFull || !toggleYearly) return;
+
+    // Remove existing event listeners
+    toggleFull.replaceWith(toggleFull.cloneNode(true));
+    toggleYearly.replaceWith(toggleYearly.cloneNode(true));
+
+    // Get fresh references
+    const newToggleFull = document.getElementById('toggle-full');
+    const newToggleYearly = document.getElementById('toggle-yearly');
+
+    // Set initial state
+    newToggleFull.classList.add('active');
+    newToggleYearly.classList.remove('active');
+
+    // Add event listeners
+    newToggleFull.addEventListener('click', function() {
+        newToggleFull.classList.add('active');
+        newToggleYearly.classList.remove('active');
+        displayAmortizationSchedule(results, 'full');
+    });
+
+    newToggleYearly.addEventListener('click', function() {
+        newToggleYearly.classList.add('active');
+        newToggleFull.classList.remove('active');
+        displayAmortizationSchedule(results, 'yearly');
+    });
 }
