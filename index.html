@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hidden Charges & Financial Leak Detector</title>
+    <meta name="description" content="Discover hidden charges in your credit card debt and calculate how much money you're losing. Free financial awareness tool to identify financial leaks and avoid debt traps.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/credit-card-leak">Credit Card Leak</a>
+            <a href="/loan-leak">Loan Leak</a>
+            <a href="/subscription-leak">Subscription Leak</a>
+        </nav>
+        <h1>Hidden Charges & Financial Leak Detector</h1>
+        <p>Identify how much money you're losing due to interest and hidden charges on your credit card debt.</p>
+    </header>
+
+    <main>
+        <section id="calculator">
+            <h2>Credit Card Hidden Charges Calculator</h2>
+            <form id="calc-form">
+                <div class="input-group">
+                    <label for="outstanding">Outstanding Amount (₹)</label>
+                    <input type="number" id="outstanding" min="0" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label for="rate">Annual Interest Rate (%)</label>
+                    <input type="number" id="rate" min="0" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label for="min-payment">Minimum Payment Percentage (%)</label>
+                    <input type="number" id="min-payment" min="0" max="100" step="0.01" required>
+                </div>
+                <button type="submit">Calculate Hidden Charges</button>
+            </form>
+        </section>
+
+        <section id="results" class="hidden">
+            <h2>Your Financial Leak Analysis</h2>
+            <div id="breakdown">
+                <div class="result-item">
+                    <span class="label">Monthly Interest Rate:</span>
+                    <span id="monthly-rate" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Estimated Payoff Time:</span>
+                    <span id="payoff-time" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Total Interest Paid:</span>
+                    <span id="total-interest" class="value"></span>
+                </div>
+                <div class="result-item highlight">
+                    <span class="label">Total Money Lost:</span>
+                    <span id="money-lost" class="value"></span>
+                </div>
+            </div>
+            <div id="insights">
+                <h3>Financial Insights</h3>
+                <ul id="insight-list"></ul>
+            </div>
+        </section>
+
+        <section id="content">
+            <h2>Understanding Hidden Charges and Financial Leaks</h2>
+            <article>
+                <h3>What Are Hidden Charges?</h3>
+                <p>Hidden charges are fees and costs that are not immediately obvious when you sign up for a financial product. These can include processing fees, late payment penalties, annual fees, and more. In credit cards, the biggest hidden cost is often the interest that accrues if you carry a balance.</p>
+
+                <h3>How Credit Card Interest Works</h3>
+                <p>Credit cards typically charge interest on a monthly basis. If you don't pay your balance in full each month, interest is added to your outstanding amount. This interest is usually calculated daily and posted monthly. The annual percentage rate (APR) is divided by 365 to get the daily rate, then multiplied by your average daily balance.</p>
+                <p>For example, if your APR is 24%, your daily interest rate is 0.06575% (24%/365). If you have a $1,000 balance for 30 days, you'd accrue about $2 in interest that month.</p>
+
+                <h3>The Minimum Payment Trap</h3>
+                <p>Many people only make the minimum payment required by their credit card company. While this keeps your account current, it can lead to years of debt and thousands in extra interest. Minimum payments are usually 2-3% of your balance, but sometimes as low as 1%.</p>
+                <p>If your minimum payment is less than the interest charged each month, your debt will actually grow even if you're making payments. This is called negative amortization.</p>
+
+                <h3>How to Avoid Financial Traps</h3>
+                <ul>
+                    <li><strong>Pay more than the minimum:</strong> Aim to pay at least 5-10% of your balance each month to reduce interest costs.</li>
+                    <li><strong>Pay on time:</strong> Avoid late fees by setting up automatic payments.</li>
+                    <li><strong>Use balance transfer cards:</strong> If you have high-interest debt, consider transferring to a 0% APR card (but watch for transfer fees).</li>
+                    <li><strong>Track your spending:</strong> Use budgeting apps to avoid unnecessary charges.</li>
+                    <li><strong>Read the fine print:</strong> Always check for hidden fees before signing up for any financial product.</li>
+                </ul>
+
+                <h3>Why Financial Awareness Matters</h3>
+                <p>Small financial leaks can add up to significant losses over time. By understanding how interest and fees work, you can make better decisions and keep more money in your pocket. This calculator helps you visualize the true cost of carrying credit card debt.</p>
+
+                <h3>Common Financial Leaks to Watch For</h3>
+                <p>Beyond credit cards, financial leaks can occur in:</p>
+                <ul>
+                    <li>Unused subscriptions and memberships</li>
+                    <li>Bank fees for low balances or overdrafts</li>
+                    <li>ATM fees when using out-of-network machines</li>
+                    <li>Investment fees and commissions</li>
+                    <li>Insurance premiums that could be shopped around</li>
+                </ul>
+
+                <p>Regularly reviewing your finances can help you plug these leaks and improve your financial health.</p>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Hidden Charges & Financial Leak Detector. All rights reserved.</p>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
