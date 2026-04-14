@@ -1,305 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMI Calculator - FinLeak</title>
-    <meta name="description" content="Calculate EMI for loans, home loans, personal loans, and car loans. Get detailed amortization schedule and total interest breakdown.">
-    <meta name="keywords" content="EMI calculator, loan calculator, home loan EMI, car loan EMI, amortization schedule">
-    <link rel="stylesheet" href="../styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💵 EMI Calculators | The Age Finder</title>
+  <meta name="description" content="Use our free EMI Calculators for Home, Car, Personal, Business, and Education Loans. Instantly calculate your monthly EMIs and compare loan options.">
+  <!-- 🔹 SEO + Branding metadata -->
+  <link rel="canonical" href="https://theagefinder.pages.dev/emi-calculator/">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:site_name" content="The Age Finder">
+  <meta property="og:title" content="EMI Calculators | The Age Finder">
+  <meta property="og:description" content="Use our free EMI Calculators for Home, Car, Personal, Business, and Education Loans. Instantly calculate your monthly EMIs and compare loan options.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://theagefinder.pages.dev/emi-calculator/">
+  <meta property="og:image" content="https://theagefinder.pages.dev/agecalc-preview.png">
+
+  <meta name="application-name" content="The Age Finder">
+  <meta name="author" content="The Age Finder">
+
+  <!-- 🔹 Structured data for Google (Organization schema) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "The Age Finder",
+    "url": "https://theagefinder.pages.dev",
+    "logo": "https://theagefinder.pages.dev/logo.png"
+  }
+  </script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    header {
+      text-align: center;
+      padding: 50px 20px 20px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+      color: #ffd700;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    }
+
+    header p {
+      font-size: 1rem;
+      opacity: 0.9;
+      color: #fff;
+    }
+
+    .emi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 25px;
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 25px;
+      color: #fff;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card:hover {
+      transform: translateY(-10px) scale(1.05);
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: auto;
+      padding: 20px;
+    }
+
+    footer a {
+      color: #ffd700;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+      color: #fff;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
+
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">💰 FinLeak</div>
-            <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/credit-card-leak">Credit Card</a></li>
-                <li><a href="/emi-calculator">EMI Calculator</a></li>
-                <li><a href="/subscription-leak">Subscriptions</a></li>
-            </ul>
-        </div>
-    </nav>
+  <header>
+    <h1>💵 EMI Calculators</h1>
+    <p>Find your loan EMIs quickly and accurately with our simple, easy-to-use tools.</p>
+  </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>EMI Calculator</h1>
-            <p>Calculate loan EMIs, total interest, and amortization schedule for home loans, car loans, and personal loans</p>
-            <div class="hero-cta">
-                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Calculate EMI</button>
-            </div>
-        </div>
-    </section>
+  <main class="emi-grid">
+    <a href="home-loan.html" class="card">
+      <h2>🏠 Home Loan EMI Calculator</h2>
+      <p>Calculate your home loan monthly installment.</p>
+    </a>
 
-    <main>
-        <!-- Input Section -->
-        <section id="calculator" class="calculator-section">
-            <div class="container">
-                <h2>Loan EMI Calculator</h2>
-                <div class="grid">
-                    <!-- Input Card -->
-                    <div class="card input-card">
-                        <h3>Enter Loan Details</h3>
-                        <form id="emi-form">
-                            <div class="form-group">
-                                <label for="loan-amount">Loan Amount (₹)</label>
-                                <input type="number" id="loan-amount" min="0" step="0.01" placeholder="e.g., 50,00,000" required>
-                                <small>Principal loan amount</small>
-                            </div>
+    <a href="car-loan.html" class="card">
+      <h2>🚗 Car Loan EMI Calculator</h2>
+      <p>Plan your car loan payments easily.</p>
+    </a>
 
-                            <div class="form-group">
-                                <label for="interest-rate">Annual Interest Rate (%)</label>
-                                <input type="number" id="interest-rate" min="0" step="0.01" placeholder="e.g., 8.5" required>
-                                <small>Home loan: 6-9%, Car loan: 7-12%, Personal loan: 10-15%</small>
-                            </div>
+    <a href="personal-loan.html" class="card">
+      <h2>💰 Personal Loan EMI Calculator</h2>
+      <p>Find your monthly EMI instantly.</p>
+    </a>
 
-                            <div class="form-group">
-                                <label for="loan-tenure">Loan Tenure</label>
-                                <div class="tenure-inputs">
-                                    <input type="number" id="loan-tenure-years" min="0" max="30" placeholder="Years" required>
-                                    <input type="number" id="loan-tenure-months" min="0" max="11" placeholder="Months">
-                                </div>
-                                <small>Maximum 30 years for home loans</small>
-                            </div>
+    <a href="education-loan.html" class="card">
+      <h2>🎓 Education Loan EMI Calculator</h2>
+      <p>Plan your education loan repayment.</p>
+    </a>
 
-                            <div class="form-group">
-                                <label for="monthly-income">Monthly Income (₹) - Optional</label>
-                                <input type="number" id="monthly-income" min="0" step="0.01" placeholder="e.g., 50,000">
-                                <small>Used to calculate EMI affordability ratio</small>
-                            </div>
+    <a href="business-loan.html" class="card">
+      <h2>🏢 Business Loan EMI Calculator</h2>
+      <p>Calculate EMIs for business financing.</p>
+    </a>
 
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <span class="btn-text">Calculate EMI</span>
-                                <span id="emi-loading-spinner" class="spinner hidden"></span>
-                            </button>
-                        </form>
-                    </div>
+    <a href="credit-card.html" class="card">
+      <h2>💳 Credit Card EMI Calculator</h2>
+      <p>Know your monthly payment amount.</p>
+    </a>
 
-                    <!-- Chart Card -->
-                    <div class="card chart-card hidden" id="emi-chart-card">
-                        <h3>EMI Breakdown</h3>
-                        <canvas id="emi-pie-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <a href="gold-loan.html" class="card">
+      <h2>🏅 Gold Loan EMI Calculator</h2>
+      <p>Estimate EMIs for gold-backed loans.</p>
+    </a>
 
-        <!-- Results Section -->
-        <section id="emi-results" class="results-section hidden">
-            <div class="container">
-                <h2>Your EMI Calculation</h2>
+    <a href="loan-comparison/" class="card">
+      <h2>📊 Loan Comparison Calculator</h2>
+      <p>Compare EMIs between multiple loans.</p>
+    </a>
+  </main>
 
-                <!-- Key Metrics -->
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon">💰</div>
-                        <div class="metric-content">
-                            <small>Monthly EMI</small>
-                            <h3 id="emi-amount">₹0</h3>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon">📊</div>
-                        <div class="metric-content">
-                            <small>Total Amount</small>
-                            <h3 id="total-amount">₹0</h3>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon">💸</div>
-                        <div class="metric-content">
-                            <small>Total Interest</small>
-                            <h3 id="total-interest">₹0</h3>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon">📅</div>
-                        <div class="metric-content">
-                            <small>Loan Tenure</small>
-                            <h3 id="loan-tenure-display">0 months</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Breakdown Cards -->
-                <div class="grid mt-3">
-                    <div class="card">
-                        <h3>Payment Breakdown</h3>
-                        <div class="breakdown-item">
-                            <span>Principal Amount</span>
-                            <span id="emi-principal" class="value">₹0</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span>Total Interest</span>
-                            <span id="emi-interest" class="value">₹0</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span>Interest % of Principal</span>
-                            <span id="emi-percentage" class="value">0%</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span>Processing Fee (est.)</span>
-                            <span id="processing-fee" class="value">₹0</span>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>EMI Comparison</h3>
-                        <div class="comparison-item">
-                            <span>Current EMI</span>
-                            <span id="current-emi" class="value">₹0</span>
-                        </div>
-                        <div class="comparison-item">
-                            <span>Lower Rate (-1%)</span>
-                            <span id="lower-rate-emi" class="value">₹0</span>
-                        </div>
-                        <div class="comparison-item">
-                            <span>Higher Rate (+1%)</span>
-                            <span id="higher-rate-emi" class="value">₹0</span>
-                        </div>
-                        <div class="comparison-item">
-                            <span>Shorter Tenure (-1 year)</span>
-                            <span id="shorter-tenure-emi" class="value">₹0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Amortization Table -->
-                <div class="card mt-3">
-                    <h3>Amortization Schedule</h3>
-                    <div class="table-container">
-                        <table id="emi-amortization-table" class="monthly-table">
-                            <thead>
-                                <tr>
-                                    <th>Month</th>
-                                    <th>EMI</th>
-                                    <th>Principal</th>
-                                    <th>Interest</th>
-                                    <th>Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody id="emi-table-body">
-                                <!-- Table rows will be populated here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Insights Section -->
-                <div class="card mt-3">
-                    <h3>🎯 Loan Insights & Recommendations</h3>
-                    <ul id="emi-insight-list" class="insight-list"></ul>
-                </div>
-
-                <!-- Prepayment Analysis -->
-                <div class="card mt-3">
-                    <h3>💡 Prepayment Benefits</h3>
-                    <div class="prepayment-scenarios">
-                        <div class="scenario-item">
-                            <h4>Prepay ₹50,000 annually</h4>
-                            <p id="prepay-50k">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                        <div class="scenario-item">
-                            <h4>Prepay ₹1,00,000 annually</h4>
-                            <p id="prepay-1lakh">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                        <div class="scenario-item">
-                            <h4>Prepay ₹2,00,000 annually</h4>
-                            <p id="prepay-2lakh">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Educational Content -->
-        <section id="content" class="content-section">
-            <div class="container">
-                <h2>Understanding EMI & Loans</h2>
-                <article>
-                    <h3>What is EMI?</h3>
-                    <p>EMI (Equated Monthly Installment) is a fixed monthly payment that includes both principal and interest portions of a loan. EMIs are calculated using the loan amount, interest rate, and tenure.</p>
-
-                    <h3>How EMI is Calculated</h3>
-                    <p>The EMI formula considers compound interest and ensures the loan is paid off in equal monthly installments:</p>
-                    <div class="formula-box">
-                        <strong>EMI = P × r × (1+r)^n / ((1+r)^n - 1)</strong><br>
-                        Where:<br>
-                        P = Principal loan amount<br>
-                        r = Monthly interest rate (annual rate ÷ 12 ÷ 100)<br>
-                        n = Number of monthly installments
-                    </div>
-
-                    <h3>EMI vs Interest Distribution</h3>
-                    <p>In the early years of a loan, most of your EMI goes towards interest payment. As time progresses, more of your EMI goes towards principal repayment.</p>
-                    <ul>
-                        <li><strong>Year 1:</strong> ~80-90% interest, ~10-20% principal</li>
-                        <li><strong>Year 5:</strong> ~60-70% interest, ~30-40% principal</li>
-                        <li><strong>Year 10:</strong> ~40-50% interest, ~50-60% principal</li>
-                        <li><strong>Year 20:</strong> ~20-30% interest, ~70-80% principal</li>
-                    </ul>
-
-                    <h3>Types of Loans & Typical Interest Rates</h3>
-                    <ul>
-                        <li><strong>Home Loan:</strong> 6-9% (20-30 year tenure)</li>
-                        <li><strong>Car Loan:</strong> 7-12% (3-7 year tenure)</li>
-                        <li><strong>Personal Loan:</strong> 10-15% (1-5 year tenure)</li>
-                        <li><strong>Education Loan:</strong> 8-12% (5-15 year tenure)</li>
-                        <li><strong>Business Loan:</strong> 12-18% (1-10 year tenure)</li>
-                    </ul>
-
-                    <h3>Prepayment Benefits</h3>
-                    <p>Prepaying your loan can save significant interest and reduce tenure:</p>
-                    <ul>
-                        <li><strong>Interest Savings:</strong> Prepayments reduce outstanding principal, lowering future interest</li>
-                        <li><strong>Tenure Reduction:</strong> Extra payments can shorten loan duration</li>
-                        <li><strong>Tax Benefits:</strong> Principal prepayments may qualify for tax deductions</li>
-                        <li><strong>Processing Fees:</strong> Some banks charge 1-2% for prepayment</li>
-                    </ul>
-
-                    <h3>Loan Terms You Should Know</h3>
-                    <ul>
-                        <li><strong>Principal:</strong> Original loan amount</li>
-                        <li><strong>Interest Rate:</strong> Annual percentage charged on outstanding balance</li>
-                        <li><strong>Tenure:</strong> Total duration of the loan</li>
-                        <li><strong>Amortization:</strong> Schedule showing principal and interest breakdown</li>
-                        <li><strong>Processing Fee:</strong> One-time fee charged by lender (0.5-2% of loan)</li>
-                        <li><strong>Pre-closure Charges:</strong> Fees for paying off loan before tenure ends</li>
-                    </ul>
-
-                    <h3>Tips for Better Loan Management</h3>
-                    <ul>
-                        <li><strong>Compare Rates:</strong> Check multiple lenders for best rates</li>
-                        <li><strong>Negotiate:</strong> Ask for lower rates based on credit score</li>
-                        <li><strong>Choose Tenure Wisely:</strong> Longer tenure = lower EMI but higher interest</li>
-                        <li><strong>Prepay When Possible:</strong> Use bonuses or windfalls to reduce principal</li>
-                        <li><strong>Track Payments:</strong> Monitor amortization to see progress</li>
-                        <li><strong>Refinance:</strong> Consider switching loans when rates drop</li>
-                    </ul>
-                </article>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
-            <div class="footer-links">
-                <a href="#content">Learn</a> | <a href="/">Home</a>
-            </div>
-        </div>
-    </footer>
-
-    <script src="../calculations.js"></script>
-    <script src="../insights.js"></script>
-    <script src="../ui.js"></script>
-    <script src="emi-script.js"></script>
+  <footer>
+    <a href="/">← Back to The Age Finder</a>
+  </footer>
 </body>
 </html>

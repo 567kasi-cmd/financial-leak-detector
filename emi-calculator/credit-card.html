@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 🔹 SEO and Branding -->
+  <title>💳 Credit Card EMI Calculator | The Age Finder</title>
+  <meta name="description" content="Use our Credit Card EMI Calculator to find your monthly EMI, total interest, and total repayment instantly. Fast, accurate, and easy to use." />
+  <meta name="keywords" content="credit card EMI calculator, EMI calculator, credit card payment calculator, The Age Finder" />
+  <meta name="author" content="The Age Finder Team" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://theagefinder.pages.dev/emi-calculator/credit-card/" />
+  <!-- 🔹 Open Graph Tags -->
+  <meta property="og:title" content="Credit Card EMI Calculator | The Age Finder" />
+  <meta property="og:description" content="Easily calculate your credit card EMIs, total interest, and payment amount with The Age Finder." />
+  <meta property="og:url" content="https://theagefinder.pages.dev/emi-calculator/credit-card/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/agecalc-preview.png" />
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>💳 Credit Card EMI Calculator</h1>
+      <p>Calculate your monthly credit card EMI with total interest and payment breakdown.</p>
+    </header>
+
+    <main>
+      <form id="emiForm" class="emi-form">
+
+      <label>Purchase Amount (₹)</label>
+      <input type="number" id="amount" placeholder="Enter purchase amount">
+
+      <label>Interest Rate (% per annum)</label>
+      <input type="number" id="rate" placeholder="e.g. 24">
+
+      <label>Tenure (months)</label>
+      <input type="number" id="months" placeholder="e.g. 12">
+
+      <button type="submit">Calculate EMI</button>
+    </form>
+
+      <div class="result" id="result"></div>
+      <section class="info-section">
+    <h2>What is Credit Card EMI?</h2>
+    <p>Credit Card EMI allows you to convert large purchases into smaller monthly payments.</p>
+
+    <h2>How to Use This Calculator?</h2>
+    <p>Enter purchase amount, interest rate, and tenure to calculate EMI instantly.</p>
+
+    <h2>Benefits</h2>
+    <ul>
+      <li>Easy repayment planning</li>
+      <li>Instant EMI calculation</li>
+      <li>Better budgeting</li>
+    </ul>
+  </section>
+    </main>
+
+    <footer class="footer">
+    <p>Explore More Tools:</p>
+    <a href="/">Age Calculator</a> |
+    <a href="/bmi/">BMI Calculator</a> |
+    <a href="/date-difference/">Date Difference</a> |
+    <a href="/emi-calculator/">EMI Calculator</a>
+    <br><br>
+    <a href="/emi-calculator/">← Back to EMI Calculators</a>
+  </footer>
+  </div>
+
+  <script>
+    function calculateEMI() {
+      const P = parseFloat(document.getElementById("amount").value);
+      const R = parseFloat(document.getElementById("rate").value) / 12 / 100;
+      const N = parseFloat(document.getElementById("months").value);
+      const resultDiv = document.getElementById("result");
+
+      if (isNaN(P) || isNaN(R) || isNaN(N) || N <= 0) {
+        resultDiv.innerHTML = "<p>Please enter valid values for all fields.</p>";
+        return;
+      }
+
+      const emi = (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1);
+      const totalPayment = emi * N;
+      const totalInterest = totalPayment - P;
+
+      resultDiv.innerHTML = `
+        <h3>📊 Results</h3>
+        <p><strong>Monthly EMI:</strong> ₹${emi.toFixed(2)}</p>
+        <p><strong>Total Interest:</strong> ₹${totalInterest.toFixed(2)}</p>
+        <p><strong>Total Payment:</strong> ₹${totalPayment.toFixed(2)}</p>
+      `;
+    }
+
+    document.getElementById("emiForm").onsubmit = function(event) {
+      event.preventDefault();
+      calculateEMI();
+    };
+  </script>
+</body>
+</html>

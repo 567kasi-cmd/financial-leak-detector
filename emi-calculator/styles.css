@@ -1,0 +1,145 @@
+/* Shared CSS for EMI Calculator Pages */
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+header h1 {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+header p {
+  max-width: 600px;
+  margin: 0 auto 20px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.emi-form {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 600px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.emi-form label {
+  display: block;
+  margin: 12px 0 5px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.emi-form input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.emi-form button {
+  margin-top: 20px;
+  background: #fff;
+  color: #764ba2;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.emi-form button:hover {
+  background: #764ba2;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.result {
+  margin: 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 600px;
+}
+
+.info-section {
+  margin-top: 30px;
+  max-width: 600px;
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.footer {
+  margin-top: 40px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  width: 100%;
+}
+
+.footer a {
+  color: #ffd700;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  .container {
+    gap: 15px;
+  }
+  .emi-form, .result, .info-section {
+    padding: 20px;
+  }
+  header h1 {
+    font-size: 1.8rem;
+  }
+}

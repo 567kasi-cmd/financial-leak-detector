@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 🔹 SEO and Branding -->
+  <title>🏦 Loan Comparison Calculator | The Age Finder</title>
+  <meta name="description" content="Compare multiple loans instantly! Calculate and visualize EMIs for up to three loans using The Age Finder’s free Loan Comparison Calculator." />
+  <meta name="keywords" content="loan comparison, emi calculator, loan vs loan, The Age Finder, home loan comparison, personal loan comparison" />
+  <meta name="author" content="The Age Finder Team" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- 🔹 Open Graph (for social and SEO preview) -->
+  <meta property="og:title" content="Loan Comparison Calculator | The Age Finder" />
+  <meta property="og:description" content="Compare EMIs and interest payments across different loans easily with The Age Finder’s free online calculator." />
+  <meta property="og:url" content="https://theagefinder.pages.dev/emi-calculator/loan-comparison/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/agecalc-preview.png" />
+  <link rel="canonical" href="https://theagefinder.pages.dev/emi-calculator/loan-comparison/" />
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>🏦 Loan Comparison Calculator</h1>
+  </header>
+
+  <main>
+    <form id="loanForm">
+      <div id="loanInputs">
+        <div class="loan-block">
+          <h3>Loan 1</h3>
+          <label>Loan Amount (₹): <input type="number" class="amount" required></label><br>
+          <label>Interest Rate (%): <input type="number" class="rate" step="0.01" required></label><br>
+          <label>Tenure (months): <input type="number" class="months" required></label><br>
+        </div>
+      </div>
+
+      <button type="button" id="addLoan">+ Add Another Loan</button>
+      <button type="submit">Compare</button>
+      <button type="button" id="reset">Reset</button>
+    </form>
+
+    <section id="results">
+      <h2>📊 EMI Comparison Result</h2>
+      <canvas id="emiChart"></canvas>
+      <div id="resultText"></div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="/emi-calculator/">← Back to EMI Calculators</a>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
