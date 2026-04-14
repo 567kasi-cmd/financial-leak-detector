@@ -878,8 +878,8 @@ article li {
     border-radius: 50%;
     background: conic-gradient(
         currentColor 0deg,
-        transparent calc(var(--score) * 3.6deg),
-        transparent calc(var(--score) * 3.6deg + 10deg)
+        transparent calc(var(--score, 0) * 3.6deg),
+        transparent calc(var(--score, 0) * 3.6deg + 10deg)
     );
     mask: radial-gradient(circle at center, transparent 45%, black 55%);
     -webkit-mask: radial-gradient(circle at center, transparent 45%, black 55%);
@@ -1026,47 +1026,80 @@ article li {
 /* Amortization Schedule Table */
 .amortization-container {
     max-height: 400px;
+    overflow-x: auto;
     overflow-y: auto;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     background: white;
+    border: 1px solid #e8edf3;
 }
 
 .amortization-table {
     width: 100%;
-    border-collapse: collapse;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
     font-size: 0.9rem;
 }
 
-.amortization-table thead {
-    position: sticky;
-    top: 0;
+.amortization-table thead tr {
     background: var(--primary);
-    color: white;
-    z-index: 10;
 }
 
 .amortization-table th,
 .amortization-table td {
+    display: table-cell;
     padding: 0.75rem 0.5rem;
-    text-align: left;
     border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    white-space: nowrap;
+    background-clip: padding-box;
 }
 
 .amortization-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--primary);
+    color: white;
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.8rem;
     letter-spacing: 0.5px;
+    text-align: left;
+}
+
+.amortization-table th:not(:first-child),
+.amortization-table td.currency,
+.amortization-table tfoot td:not(:first-child) {
+    text-align: right;
+}
+
+.amortization-table th:first-child,
+.amortization-table td:first-child {
+    text-align: left;
+}
+
+.amortization-table tbody td {
+    background: white;
 }
 
 .amortization-table tbody tr:nth-child(even) {
     background-color: #f8f9fa;
 }
 
+.amortization-table tbody tr:nth-child(even) td {
+    background-color: #f8f9fa;
+}
+
 .amortization-table tbody tr:hover {
     background-color: #e3f2fd;
     transition: background-color 0.2s ease;
+}
+
+.amortization-table tbody tr:hover td {
+    background-color: #e3f2fd;
 }
 
 .amortization-table .currency {
@@ -1096,6 +1129,8 @@ article li {
 
 .amortization-table .summary-row td {
     padding: 1rem 0.5rem;
+    background: var(--light);
+    border-bottom: none;
 }
 
 /* Schedule toggle */

@@ -684,14 +684,7 @@ function displayAmortizationSchedule(results, mode = 'full') {
     tfoot.innerHTML = '';
 
     if (mode === 'yearly') {
-        // Change header for yearly
-        thead.innerHTML = `
-            <th>Year</th>
-            <th>Total EMI</th>
-            <th>Total Principal</th>
-            <th>Total Interest</th>
-            <th>Ending Balance</th>
-        `;
+        renderAmortizationHeader(thead, ['Year', 'Total EMI', 'Total Principal', 'Total Interest', 'Ending Balance']);
 
         // Aggregate by year
         const yearlyData = {};
@@ -712,40 +705,28 @@ function displayAmortizationSchedule(results, mode = 'full') {
         });
 
         Object.values(yearlyData).forEach(data => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${data.year}</td>
-                <td class="currency">${formatCurrency(data.totalPayment)}</td>
-                <td class="currency principal">${formatCurrency(data.totalPrincipal)}</td>
-                <td class="currency interest">${formatCurrency(data.totalInterest)}</td>
-                <td class="currency balance">${formatCurrency(data.balance)}</td>
-            `;
-            tbody.appendChild(row);
+            tbody.appendChild(createAmortizationRow([
+                { value: data.year },
+                { value: formatCurrency(data.totalPayment), className: 'currency' },
+                { value: formatCurrency(data.totalPrincipal), className: 'currency principal' },
+                { value: formatCurrency(data.totalInterest), className: 'currency interest' },
+                { value: formatCurrency(data.balance), className: 'currency balance' }
+            ]));
         });
 
         // Summary for yearly
         const totalPrincipal = Object.values(yearlyData).reduce((sum, y) => sum + y.totalPrincipal, 0);
         const totalInterest = Object.values(yearlyData).reduce((sum, y) => sum + y.totalInterest, 0);
-        const summaryRow = document.createElement('tr');
-        summaryRow.className = 'summary-row';
-        summaryRow.innerHTML = `
-            <td><strong>Total</strong></td>
-            <td class="currency"><strong>${formatCurrency(results.totalPaid)}</strong></td>
-            <td class="currency principal"><strong>${formatCurrency(totalPrincipal)}</strong></td>
-            <td class="currency interest"><strong>${formatCurrency(totalInterest)}</strong></td>
-            <td class="currency balance"><strong>-</strong></td>
-        `;
-        tfoot.appendChild(summaryRow);
+        tfoot.appendChild(createAmortizationRow([
+            { value: 'Total', strong: true },
+            { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
+            { value: formatCurrency(totalPrincipal), className: 'currency principal', strong: true },
+            { value: formatCurrency(totalInterest), className: 'currency interest', strong: true },
+            { value: '-', className: 'currency balance', strong: true }
+        ], 'summary-row'));
 
     } else {
-        // Full monthly schedule
-        thead.innerHTML = `
-            <th>Month</th>
-            <th>EMI</th>
-            <th>Principal</th>
-            <th>Interest</th>
-            <th>Balance</th>
-        `;
+        renderAmortizationHeader(thead, ['Month', 'EMI', 'Principal', 'Interest', 'Balance']);
 
         const dataToShow = results.monthlyData;
 
@@ -757,30 +738,63 @@ function displayAmortizationSchedule(results, mode = 'full') {
             totalPrincipalPaid += principalPaid;
             totalInterestPaid += data.interest;
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${data.month}</td>
-                <td class="currency">${formatCurrency(data.payment)}</td>
-                <td class="currency principal">${formatCurrency(principalPaid)}</td>
-                <td class="currency interest">${formatCurrency(data.interest)}</td>
-                <td class="currency balance">${formatCurrency(data.balance)}</td>
-            `;
-            tbody.appendChild(row);
+            tbody.appendChild(createAmortizationRow([
+                { value: data.month },
+                { value: formatCurrency(data.payment), className: 'currency' },
+                { value: formatCurrency(principalPaid), className: 'currency principal' },
+                { value: formatCurrency(data.interest), className: 'currency interest' },
+                { value: formatCurrency(data.balance), className: 'currency balance' }
+            ]));
         });
 
-        // Add summary row
-        const summaryRow = document.createElement('tr');
-        summaryRow.className = 'summary-row';
-        summaryRow.innerHTML = `
-            <td><strong>Total</strong></td>
-            <td class="currency"><strong>${formatCurrency(results.totalPaid)}</strong></td>
-            <td class="currency principal"><strong>${formatCurrency(totalPrincipalPaid)}</strong></td>
-            <td class="currency interest"><strong>${formatCurrency(totalInterestPaid)}</strong></td>
-            <td class="currency balance"><strong>-</strong></td>
-        `;
-        tfoot.appendChild(summaryRow);
+        tfoot.appendChild(createAmortizationRow([
+            { value: 'Total', strong: true },
+            { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
+            { value: formatCurrency(totalPrincipalPaid), className: 'currency principal', strong: true },
+            { value: formatCurrency(totalInterestPaid), className: 'currency interest', strong: true },
+            { value: '-', className: 'currency balance', strong: true }
+        ], 'summary-row'));
 
     }
+}
+
+function renderAmortizationHeader(headerRow, labels) {
+    headerRow.innerHTML = '';
+
+    labels.forEach(label => {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = label;
+        headerRow.appendChild(th);
+    });
+}
+
+function createAmortizationRow(cells, className = '') {
+    const row = document.createElement('tr');
+
+    if (className) {
+        row.className = className;
+    }
+
+    cells.forEach(cellConfig => {
+        const td = document.createElement('td');
+
+        if (cellConfig.className) {
+            td.className = cellConfig.className;
+        }
+
+        if (cellConfig.strong) {
+            const strong = document.createElement('strong');
+            strong.textContent = cellConfig.value;
+            td.appendChild(strong);
+        } else {
+            td.textContent = cellConfig.value;
+        }
+
+        row.appendChild(td);
+    });
+
+    return row;
 }
 
 /**
