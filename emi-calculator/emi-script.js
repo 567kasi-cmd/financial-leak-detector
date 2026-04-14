@@ -166,17 +166,40 @@ function populateEmiTable(monthlyData) {
     const tbody = document.getElementById('emi-table-body');
     tbody.innerHTML = '';
 
+    const fragment = document.createDocumentFragment();
+
     monthlyData.forEach(data => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${data.month}</td>
-            <td>₹${data.payment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-            <td>₹${data.principal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-            <td>₹${data.interest.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-            <td>₹${data.balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-        `;
-        tbody.appendChild(row);
+
+        const monthCell = document.createElement('td');
+        monthCell.textContent = data.month;
+
+        const emiCell = document.createElement('td');
+        emiCell.className = 'currency';
+        emiCell.textContent = `₹${Number(data.payment).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const principalCell = document.createElement('td');
+        principalCell.className = 'currency principal';
+        principalCell.textContent = `₹${Number(data.principal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const interestCell = document.createElement('td');
+        interestCell.className = 'currency interest';
+        interestCell.textContent = `₹${Number(data.interest).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const balanceCell = document.createElement('td');
+        balanceCell.className = 'currency balance';
+        balanceCell.textContent = `₹${Number(data.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        row.appendChild(monthCell);
+        row.appendChild(emiCell);
+        row.appendChild(principalCell);
+        row.appendChild(interestCell);
+        row.appendChild(balanceCell);
+
+        fragment.appendChild(row);
     });
+
+    tbody.appendChild(fragment);
 }
 
 /**

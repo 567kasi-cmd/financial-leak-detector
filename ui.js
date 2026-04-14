@@ -83,7 +83,10 @@ function formatPayoffTime(results) {
  * @returns {string} Formatted currency string
  */
 function formatCurrency(amount) {
-    return `₹${amount.toLocaleString('en-IN')}`;
+    return `₹${Number(amount).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
 }
 
 /**
@@ -677,9 +680,11 @@ function hideLoading() {
  * @param {string} mode - 'full' for monthly, 'yearly' for annual summary
  */
 function displayAmortizationSchedule(results, mode = 'full') {
-    const tbody = document.getElementById('amortization-body');
-    const tfoot = document.getElementById('amortization-footer');
+    const tbody = document.getElementById('amortizationBody') || document.getElementById('amortization-body');
+    const tfoot = document.getElementById('amortizationFooter') || document.getElementById('amortization-footer');
     const thead = document.querySelector('.amortization-table thead tr');
+    if (!tbody || !tfoot || !thead) return;
+
     tbody.innerHTML = '';
     tfoot.innerHTML = '';
 
@@ -704,8 +709,9 @@ function displayAmortizationSchedule(results, mode = 'full') {
             yearlyData[year].totalInterest += data.interest;
         });
 
+        const bodyFragment = document.createDocumentFragment();
         Object.values(yearlyData).forEach(data => {
-            tbody.appendChild(createAmortizationRow([
+            bodyFragment.appendChild(createAmortizationRow([
                 { value: data.year },
                 { value: formatCurrency(data.totalPayment), className: 'currency' },
                 { value: formatCurrency(data.totalPrincipal), className: 'currency principal' },
@@ -713,17 +719,20 @@ function displayAmortizationSchedule(results, mode = 'full') {
                 { value: formatCurrency(data.balance), className: 'currency balance' }
             ]));
         });
+        tbody.appendChild(bodyFragment);
 
         // Summary for yearly
         const totalPrincipal = Object.values(yearlyData).reduce((sum, y) => sum + y.totalPrincipal, 0);
         const totalInterest = Object.values(yearlyData).reduce((sum, y) => sum + y.totalInterest, 0);
-        tfoot.appendChild(createAmortizationRow([
+        const footerFragment = document.createDocumentFragment();
+        footerFragment.appendChild(createAmortizationRow([
             { value: 'Total', strong: true },
             { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
             { value: formatCurrency(totalPrincipal), className: 'currency principal', strong: true },
             { value: formatCurrency(totalInterest), className: 'currency interest', strong: true },
             { value: '-', className: 'currency balance', strong: true }
         ], 'summary-row'));
+        tfoot.appendChild(footerFragment);
 
     } else {
         renderAmortizationHeader(thead, ['Month', 'EMI', 'Principal', 'Interest', 'Balance']);
@@ -733,12 +742,13 @@ function displayAmortizationSchedule(results, mode = 'full') {
         let totalPrincipalPaid = 0;
         let totalInterestPaid = 0;
 
+        const bodyFragment = document.createDocumentFragment();
         dataToShow.forEach(data => {
             const principalPaid = data.payment - data.interest;
             totalPrincipalPaid += principalPaid;
             totalInterestPaid += data.interest;
 
-            tbody.appendChild(createAmortizationRow([
+            bodyFragment.appendChild(createAmortizationRow([
                 { value: data.month },
                 { value: formatCurrency(data.payment), className: 'currency' },
                 { value: formatCurrency(principalPaid), className: 'currency principal' },
@@ -746,14 +756,17 @@ function displayAmortizationSchedule(results, mode = 'full') {
                 { value: formatCurrency(data.balance), className: 'currency balance' }
             ]));
         });
+        tbody.appendChild(bodyFragment);
 
-        tfoot.appendChild(createAmortizationRow([
+        const footerFragment = document.createDocumentFragment();
+        footerFragment.appendChild(createAmortizationRow([
             { value: 'Total', strong: true },
             { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
             { value: formatCurrency(totalPrincipalPaid), className: 'currency principal', strong: true },
             { value: formatCurrency(totalInterestPaid), className: 'currency interest', strong: true },
             { value: '-', className: 'currency balance', strong: true }
         ], 'summary-row'));
+        tfoot.appendChild(footerFragment);
 
     }
 }
@@ -821,12 +834,14 @@ function setupScheduleToggle(results) {
 
     // Add event listeners
     newToggleFull.addEventListener('click', function() {
+        if (newToggleFull.classList.contains('active')) return;
         newToggleFull.classList.add('active');
         newToggleYearly.classList.remove('active');
         displayAmortizationSchedule(results, 'full');
     });
 
     newToggleYearly.addEventListener('click', function() {
+        if (newToggleYearly.classList.contains('active')) return;
         newToggleYearly.classList.add('active');
         newToggleFull.classList.remove('active');
         displayAmortizationSchedule(results, 'yearly');

@@ -1024,102 +1024,114 @@ article li {
 }
 
 /* Amortization Schedule Table */
+.table-container,
 .amortization-container {
     max-height: 400px;
     overflow-x: auto;
     overflow-y: auto;
-    border-radius: var(--border-radius);
+    border-radius: 10px;
     box-shadow: var(--shadow);
     background: white;
     border: 1px solid #e8edf3;
 }
 
-.amortization-table {
+.amortization-table,
+.monthly-table {
     width: 100%;
-    min-width: 720px;
-    border-collapse: separate;
-    border-spacing: 0;
+    min-width: 680px;
+    border-collapse: collapse;
     table-layout: fixed;
-    font-size: 0.9rem;
+    font-size: 14px;
 }
 
-.amortization-table thead tr {
-    background: var(--primary);
+.amortization-table thead tr,
+.monthly-table thead tr {
+    background: #ffffff;
 }
 
 .amortization-table th,
-.amortization-table td {
+.amortization-table td,
+.monthly-table th,
+.monthly-table td {
     display: table-cell;
-    padding: 0.75rem 0.5rem;
+    padding: 10px;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
     white-space: nowrap;
     background-clip: padding-box;
 }
 
-.amortization-table th {
+.amortization-table th,
+.monthly-table th {
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--primary);
-    color: white;
+    background: #ffffff;
+    color: var(--secondary);
     font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
+    text-transform: none;
+    font-size: 14px;
     text-align: left;
 }
 
 .amortization-table th:not(:first-child),
 .amortization-table td.currency,
-.amortization-table tfoot td:not(:first-child) {
+.amortization-table tfoot td:not(:first-child),
+.monthly-table th:not(:first-child),
+.monthly-table td.currency {
     text-align: right;
 }
 
 .amortization-table th:first-child,
-.amortization-table td:first-child {
+.amortization-table td:first-child,
+.monthly-table th:first-child,
+.monthly-table td:first-child {
     text-align: left;
 }
 
-.amortization-table tbody td {
+.amortization-table tbody td,
+.monthly-table tbody td {
     background: white;
 }
 
-.amortization-table tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-
-.amortization-table tbody tr:nth-child(even) td {
-    background-color: #f8f9fa;
+.amortization-table tbody tr:nth-child(even) td,
+.monthly-table tbody tr:nth-child(even) td {
+    background-color: #f9f9f9;
 }
 
 .amortization-table tbody tr:hover {
-    background-color: #e3f2fd;
+    background-color: #f1f5ff;
     transition: background-color 0.2s ease;
 }
 
-.amortization-table tbody tr:hover td {
-    background-color: #e3f2fd;
+.amortization-table tbody tr:hover td,
+.monthly-table tbody tr:hover td {
+    background-color: #f1f5ff;
 }
 
-.amortization-table .currency {
+.amortization-table .currency,
+.monthly-table .currency {
     text-align: right;
     font-family: 'Courier New', monospace;
     font-weight: 500;
 }
 
-.amortization-table .principal {
+.amortization-table .principal,
+.monthly-table .principal {
     color: var(--success);
     font-weight: 600;
 }
 
-.amortization-table .interest {
+.amortization-table .interest,
+.monthly-table .interest {
     color: var(--danger);
     font-weight: 600;
 }
 
-.amortization-table .balance {
-    font-weight: bold;
+.amortization-table .balance,
+.monthly-table .balance {
+    font-weight: 700;
+    color: var(--secondary);
 }
 
 .amortization-table .summary-row {
@@ -1153,18 +1165,22 @@ article li {
 
 /* Mobile responsiveness for table */
 @media (max-width: 768px) {
+    .table-container,
     .amortization-container {
         max-height: 300px;
         overflow-x: auto;
     }
 
-    .amortization-table {
+    .amortization-table,
+    .monthly-table {
         min-width: 600px; /* Ensure horizontal scroll */
         font-size: 0.8rem;
     }
 
     .amortization-table th,
-    .amortization-table td {
+    .amortization-table td,
+    .monthly-table th,
+    .monthly-table td {
         padding: 0.5rem 0.25rem;
     }
 
