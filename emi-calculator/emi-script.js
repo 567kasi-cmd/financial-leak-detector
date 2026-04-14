@@ -166,45 +166,17 @@ function populateEmiTable(monthlyData) {
     const tbody = document.getElementById('emi-table-body');
     tbody.innerHTML = '';
 
-    // Show first 12 months, then every 12th month, then last few months
-    const displayData = [];
-    const totalMonths = monthlyData.length;
-
-    // First 12 months
-    for (let i = 0; i < Math.min(12, totalMonths); i++) {
-        displayData.push(monthlyData[i]);
-    }
-
-    // Every 12th month in between
-    for (let i = 23; i < totalMonths - 12; i += 12) {
-        displayData.push(monthlyData[i]);
-    }
-
-    // Last 12 months
-    for (let i = Math.max(totalMonths - 12, 12); i < totalMonths; i++) {
-        if (i < totalMonths) {
-            displayData.push(monthlyData[i]);
-        }
-    }
-
-    displayData.forEach(data => {
+    monthlyData.forEach(data => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${data.month}</td>
-            <td>₹${data.payment.toLocaleString('en-IN')}</td>
-            <td>₹${data.principal.toFixed(0).toLocaleString('en-IN')}</td>
-            <td>₹${data.interest.toFixed(0).toLocaleString('en-IN')}</td>
-            <td>₹${data.balance.toFixed(0).toLocaleString('en-IN')}</td>
+            <td>₹${data.payment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+            <td>₹${data.principal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+            <td>₹${data.interest.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+            <td>₹${data.balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
         `;
         tbody.appendChild(row);
     });
-
-    // Add note if table is truncated
-    if (totalMonths > displayData.length) {
-        const noteRow = document.createElement('tr');
-        noteRow.innerHTML = `<td colspan="5" style="text-align: center; font-style: italic; color: #666;">... ${totalMonths - displayData.length} months in between ...</td>`;
-        tbody.appendChild(noteRow);
-    }
 }
 
 /**

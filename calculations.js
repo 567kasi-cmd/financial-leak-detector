@@ -93,7 +93,7 @@ function generateAMortizationSchedule(principal, monthlyRate, months, emi) {
     let balance = principal;
     const schedule = [];
 
-    for (let i = 1; i <= Math.min(months, 120); i++) {
+    for (let i = 1; i <= months; i++) {
         const interest = balance * monthlyRate;
         const principalPayment = emi - interest;
         balance -= principalPayment;

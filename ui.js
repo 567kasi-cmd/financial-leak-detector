@@ -747,8 +747,7 @@ function displayAmortizationSchedule(results, mode = 'full') {
             <th>Balance</th>
         `;
 
-        // Limit to first 60 months for performance, or all if less
-        const dataToShow = results.monthlyData.slice(0, Math.min(results.monthlyData.length, 60));
+        const dataToShow = results.monthlyData;
 
         let totalPrincipalPaid = 0;
         let totalInterestPaid = 0;
@@ -781,12 +780,6 @@ function displayAmortizationSchedule(results, mode = 'full') {
         `;
         tfoot.appendChild(summaryRow);
 
-        // If more data, add note
-        if (results.monthlyData.length > 60) {
-            const noteRow = document.createElement('tr');
-            noteRow.innerHTML = `<td colspan="5" style="text-align: center; font-style: italic;">Showing first 60 months. Full schedule available in export.</td>`;
-            tfoot.appendChild(noteRow);
-        }
     }
 }
 

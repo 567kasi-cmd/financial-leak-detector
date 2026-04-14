@@ -39,7 +39,6 @@ document.getElementById("emiForm")?.addEventListener("submit", function(e) {
   // Display EMI and amortization table
   let resultHTML = `Your Monthly EMI: ${formatCurrency(emi)}<br><br>`;
   resultHTML += `<h3>Amortization Schedule</h3>`;
-  resultHTML += `<button id="toggleSchedule" style="margin-bottom:10px; padding:8px 16px; background-color:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">View Full Schedule</button>`;
   resultHTML += `<div style="max-height:400px; overflow-y:auto; border:1px solid #ddd;">`;
   resultHTML += `<table style="width:100%; border-collapse:collapse;">`;
   resultHTML += `<thead style="position:sticky; top:0; background-color:#f2f2f2; z-index:1;"><tr>`;
@@ -52,11 +51,7 @@ document.getElementById("emiForm")?.addEventListener("submit", function(e) {
   resultHTML += `<tbody>`;
   schedule.forEach((row, index) => {
     let rowStyle = index % 2 === 0 ? 'background-color:#ffffff;' : 'background-color:#f9f9f9;';
-    let isHidden = row.month > 12 && row.month <= N - 12;
-    if (isHidden) {
-      rowStyle += ' display:none;';
-    }
-    resultHTML += `<tr style="${rowStyle}" class="${isHidden ? 'hidden-row' : ''}">`;
+    resultHTML += `<tr style="${rowStyle}">`;
     resultHTML += `<td style="border:1px solid #ddd; padding:8px; text-align:left;">${row.month}</td>`;
     resultHTML += `<td style="border:1px solid #ddd; padding:8px; text-align:right;">${formatCurrency(row.emi)}</td>`;
     resultHTML += `<td style="border:1px solid #ddd; padding:8px; text-align:right; color:#28a745; font-weight:bold;">${formatCurrency(row.principal)}</td>`;
@@ -68,14 +63,4 @@ document.getElementById("emiForm")?.addEventListener("submit", function(e) {
   resultHTML += `</div>`;
 
   document.getElementById("result").innerHTML = resultHTML;
-
-  // Add toggle functionality
-  document.getElementById("toggleSchedule").addEventListener("click", function() {
-    const hiddenRows = document.querySelectorAll(".hidden-row");
-    const isHidden = hiddenRows.length > 0 && hiddenRows[0].style.display === "none";
-    hiddenRows.forEach(row => {
-      row.style.display = isHidden ? "table-row" : "none";
-    });
-    this.textContent = isHidden ? "View Partial Schedule" : "View Full Schedule";
-  });
 });
