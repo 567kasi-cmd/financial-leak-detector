@@ -112,28 +112,6 @@ function generateAMortizationSchedule(principal, monthlyRate, months, emi) {
     return schedule;
 }
 
-/**
- * Calculate impact of prepayment (extra payment)
- * @param {number} principal - Outstanding amount
- * @param {number} annualRate - Annual interest rate
- * @param {number} minPaymentPercent - Minimum payment percentage
- * @param {number} extraPaymentAmount - Extra monthly payment
- * @returns {object} Comparison of with/without extra payment
- */
-function calculatePrepaymentSavings(principal, annualRate, minPaymentPercent, extraPaymentAmount) {
-    const without = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
-    const with_ = simulateDebtPayoff(principal, annualRate, minPaymentPercent, extraPaymentAmount);
-
-    return {
-        without: without,
-        with: with_,
-        savings: {
-            interestSaved: parseFloat((without.totalInterest - with_.totalInterest).toFixed(2)),
-            monthsSaved: without.months - with_.months,
-            totalPaymentReduction: parseFloat((without.totalPaid - with_.totalPaid).toFixed(2))
-        }
-    };
-}
 
 /**
  * Calculate debt-to-income ratio risk

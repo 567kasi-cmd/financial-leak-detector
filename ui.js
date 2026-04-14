@@ -3,7 +3,6 @@
 let pieChart = null;
 let compositionChart = null;
 let balanceTrendChart = null;
-let categoryChart = null;
 
 /**
  * Display calculation results in UI with enhanced features
@@ -354,9 +353,8 @@ function updateCompositionChart(principal, totalInterest, extraPayment = 0) {
 /**
  * Update balance trend line chart with enhanced features
  * @param {array} monthlyData - Monthly data points
- * @param {number} extraPayment - Extra payment amount
  */
-function updateBalanceTrendChart(monthlyData, extraPayment = 0) {
+function updateBalanceTrendChart(monthlyData) {
     const ctx = document.getElementById('balance-trend-chart');
     if (!ctx) return;
 
@@ -367,13 +365,11 @@ function updateBalanceTrendChart(monthlyData, extraPayment = 0) {
     const labels = [];
     const balances = [];
     const interestData = [];
-    const paymentData = [];
 
     monthlyData.forEach(data => {
         labels.push(data.month % 12 === 0 ? `${data.month / 12}y` : '');
         balances.push(data.balance);
         interestData.push(data.interest);
-        paymentData.push(data.payment);
     });
 
     balanceTrendChart = new Chart(ctx, {

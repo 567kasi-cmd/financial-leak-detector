@@ -113,7 +113,7 @@ function generateInsights(results, principal, annualRate, minPaymentPercent, ext
             icon: '💡',
             title: 'Accelerated Payoff Strategy',
             message: `If you could pay ₹${formatCurrency(aggressiveExtra)} extra monthly, you'd clear debt in ${aggressive.months} months and save ₹${formatCurrency(interestSaved)}!`,
-            action: 'Try to find this amount in your budget - it's game-changing.'
+            action: "Try to find this amount in your budget - it's game-changing."
         });
     }
 
@@ -284,34 +284,6 @@ function generateEnhancedInsights(results, principal, annualRate, minPaymentPerc
     return insights;
 }
 
-/**
- * Generate recommendations based on risk level
- * @param {number} riskScore - Risk score (0-100)
- * @returns {array} Personalized recommendations
- */
-function generateRecommendations(riskScore) {
-    const recommendations = [];
-
-    if (riskScore >= 75) {
-        recommendations.push('Seek help from a financial advisor or credit counselor');
-        recommendations.push('Negotiate with creditors for lower interest rates');
-        recommendations.push('Consider debt consolidation or balance transfer options');
-    } else if (riskScore >= 50) {
-        recommendations.push('Create a strict budget and stick to it');
-        recommendations.push('Try to allocate any bonus/extra income to debt reduction');
-        recommendations.push('Stop using credit cards for new purchases');
-    } else if (riskScore >= 30) {
-        recommendations.push('Increase monthly payments when possible');
-        recommendations.push('Monitor your spending and avoid lifestyle inflation');
-        recommendations.push('Build emergency fund to avoid future debt');
-    } else {
-        recommendations.push('Maintain current payment discipline');
-        recommendations.push('Focus on building wealth and investments');
-        recommendations.push('Help others understand debt management');
-    }
-
-    return recommendations;
-}
 
 /**
  * Format currency amount
