@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏅 Gold Loan EMI Calculator | FinLeak</title>
+    <meta name="description" content="Calculate your Gold Loan EMI instantly. Enter loan amount, interest rate, and tenure to get your monthly EMI, total interest, and repayment schedule.">
+    <meta name="keywords" content="gold loan EMI calculator, gold loan calculator, gold loan interest, FinLeak">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="author" content="FinLeak">
+    <meta name="theme-color" content="#f39c12">
+    <link rel="canonical" href="https://financial-leak-detector.pages.dev/emi-calculator/gold-loan/">
+    <meta property="og:site_name" content="FinLeak">
+    <meta property="og:title" content="Gold Loan EMI Calculator | FinLeak">
+    <meta property="og:description" content="Instantly calculate your Gold Loan EMI, total interest, and amortization schedule.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://financial-leak-detector.pages.dev/emi-calculator/gold-loan/">
+    <meta property="og:locale" content="en_IN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Gold Loan EMI Calculator | FinLeak">
+    <meta name="twitter:description" content="Calculate gold loan EMI, total repayment, and interest breakdown in seconds.">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebPage",
+                    "name": "Gold Loan EMI Calculator",
+                    "url": "https://financial-leak-detector.pages.dev/emi-calculator/gold-loan/",
+                    "description": "Free gold loan EMI calculator with amortization schedule and interest breakdown."
+                },
+                {
+                    "@type": "WebApplication",
+                    "name": "Gold Loan EMI Calculator",
+                    "url": "https://financial-leak-detector.pages.dev/emi-calculator/gold-loan/",
+                    "applicationCategory": "FinanceApplication",
+                    "operatingSystem": "Any",
+                    "description": "Calculate gold loan EMI, total repayment, and amortization for gold-backed loans.",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "INR"
+                    }
+                },
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "What is the typical interest rate for a gold loan?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Gold loan interest rates in India typically range from 7% to 29% per annum depending on the lender and loan-to-value (LTV) ratio. Banks usually offer lower rates than NBFCs."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "What is the maximum LTV ratio for a gold loan?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "As per RBI guidelines, the maximum LTV ratio for gold loans is 75%, meaning you can borrow up to 75% of the market value of your gold."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Can I prepay my gold loan without penalty?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Many lenders allow gold loan prepayment without penalty, but some may charge a small foreclosure fee. Always check the terms before prepaying."
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a class="logo" href="/">💰 FinLeak</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/credit-card-leak/">Credit Card</a></li>
+                <li><a href="/emi-calculator/">EMI Calculator</a></li>
+                <li><a href="/subscription-leak/">Subscriptions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>🏅 Gold Loan EMI Calculator</h1>
+            <p>Calculate your gold loan EMI, total interest, and repayment schedule instantly</p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Calculate EMI</button>
+                <a class="btn btn-secondary" href="/emi-calculator/">← All EMI Calculators</a>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <!-- Input Section -->
+        <section id="calculator" class="calculator-section">
+            <div class="container">
+                <h2>Gold Loan EMI Calculator</h2>
+                <div class="grid">
+                    <!-- Input Card -->
+                    <div class="card input-card">
+                        <h3>Enter Gold Loan Details</h3>
+                        <form id="gold-loan-form">
+                            <div class="form-group">
+                                <label for="loan-amount">Loan Amount (₹)</label>
+                                <input type="number" id="loan-amount" min="0" step="0.01" placeholder="e.g., 2,00,000" required>
+                                <small>Max 75% of gold market value (RBI LTV limit)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="interest-rate">Annual Interest Rate (%)</label>
+                                <input type="number" id="interest-rate" min="0" step="0.01" placeholder="e.g., 11.5" required>
+                                <small>Gold loan rates: 7–29% (banks: 7–15%, NBFCs: 12–29%)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="loan-tenure">Loan Tenure (months)</label>
+                                <input type="number" id="loan-tenure" min="1" max="84" placeholder="e.g., 12" required>
+                                <small>Typical gold loan tenure: 3–36 months</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="monthly-income">Monthly Income (₹) - Optional</label>
+                                <input type="number" id="monthly-income" min="0" step="0.01" placeholder="e.g., 40,000">
+                                <small>Used to calculate EMI affordability ratio</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <span class="btn-text">Calculate Gold Loan EMI</span>
+                                <span id="gl-loading-spinner" class="spinner hidden"></span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Chart Card -->
+                    <div class="card chart-card hidden" id="gl-chart-card">
+                        <h3>EMI Breakdown</h3>
+                        <canvas id="gl-pie-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="gl-results" class="results-section hidden">
+            <div class="container">
+                <h2>Your Gold Loan Calculation</h2>
+
+                <!-- Key Metrics -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">💰</div>
+                        <div class="metric-content">
+                            <small>Monthly EMI</small>
+                            <h3 id="gl-emi-amount">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <small>Total Amount</small>
+                            <h3 id="gl-total-amount">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">💸</div>
+                        <div class="metric-content">
+                            <small>Total Interest</small>
+                            <h3 id="gl-total-interest">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">📅</div>
+                        <div class="metric-content">
+                            <small>Loan Tenure</small>
+                            <h3 id="gl-tenure-display">0 months</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown Cards -->
+                <div class="grid mt-3">
+                    <div class="card">
+                        <h3>Payment Breakdown</h3>
+                        <div class="breakdown-item">
+                            <span>Principal Amount</span>
+                            <span id="gl-principal" class="value">₹0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Total Interest</span>
+                            <span id="gl-interest" class="value">₹0</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Interest % of Principal</span>
+                            <span id="gl-interest-pct" class="value">0%</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Processing Fee (est. 1%)</span>
+                            <span id="gl-processing-fee" class="value">₹0</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>EMI Comparison</h3>
+                        <div class="comparison-item">
+                            <span>Current EMI</span>
+                            <span id="gl-current-emi" class="value">₹0</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Lower Rate (-1%)</span>
+                            <span id="gl-lower-rate-emi" class="value">₹0</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Higher Rate (+1%)</span>
+                            <span id="gl-higher-rate-emi" class="value">₹0</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span>Shorter Tenure (-3 months)</span>
+                            <span id="gl-shorter-tenure-emi" class="value">₹0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amortization Table -->
+                <div class="card mt-3">
+                    <h3>Amortization Schedule</h3>
+                    <div class="table-container">
+                        <table id="gl-amortization-table" class="monthly-table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>EMI</th>
+                                    <th>Principal</th>
+                                    <th>Interest</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gl-table-body">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Insights Section -->
+                <div class="card mt-3">
+                    <h3>🎯 Gold Loan Insights & Recommendations</h3>
+                    <ul id="gl-insight-list" class="insight-list"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="faq-section">
+            <div class="container">
+                <h2>Gold Loan EMI FAQ</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4>What is the typical interest rate for a gold loan?</h4>
+                        <p>Gold loan interest rates in India range from 7% to 29% per annum. Banks typically charge 7–15%, while NBFCs may charge 12–29%. Your rate depends on the lender, loan amount, and LTV ratio.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>What is the maximum LTV ratio for a gold loan?</h4>
+                        <p>RBI guidelines cap the loan-to-value (LTV) ratio for gold loans at 75%. This means you can borrow up to 75% of your gold's current market value. Higher LTV usually means higher interest rates.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Can I prepay my gold loan without penalty?</h4>
+                        <p>Many lenders — especially banks — allow gold loan prepayment without a penalty. NBFCs may charge a small foreclosure fee. Always read the loan agreement before prepaying.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Educational Content -->
+        <section id="content" class="content-section">
+            <div class="container">
+                <h2>Understanding Gold Loans</h2>
+                <article>
+                    <h3>What is a Gold Loan?</h3>
+                    <p>A gold loan is a secured loan where you pledge your gold jewellery or ornaments as collateral to borrow money. Because the loan is secured, lenders typically offer lower interest rates compared to personal loans, and approval is fast — often within a few hours.</p>
+
+                    <h3>How Gold Loan EMI is Calculated</h3>
+                    <p>Gold loan EMI uses the same standard formula as other term loans:</p>
+                    <div class="formula-box">
+                        <strong>EMI = P × r × (1+r)^n / ((1+r)^n - 1)</strong><br>
+                        Where:<br>
+                        P = Principal loan amount<br>
+                        r = Monthly interest rate (annual rate ÷ 12 ÷ 100)<br>
+                        n = Number of monthly installments
+                    </div>
+
+                    <h3>Types of Gold Loan Repayment</h3>
+                    <ul>
+                        <li><strong>EMI-based:</strong> Fixed monthly payments covering both principal and interest</li>
+                        <li><strong>Bullet repayment:</strong> Pay the entire principal + interest at the end of tenure</li>
+                        <li><strong>Overdraft facility:</strong> Flexible withdrawals against pledged gold with interest only on the amount used</li>
+                    </ul>
+
+                    <h3>Key Factors That Affect Your Gold Loan</h3>
+                    <ul>
+                        <li><strong>Gold purity:</strong> 22-carat gold is typically valued; 18-carat or below may get lower value</li>
+                        <li><strong>Market price:</strong> Loan amount is based on the current market price of gold</li>
+                        <li><strong>LTV ratio:</strong> RBI mandates a maximum of 75% LTV for gold loans</li>
+                        <li><strong>Lender type:</strong> Banks generally offer lower rates than NBFCs</li>
+                        <li><strong>Tenure:</strong> Gold loans are usually short-term (3–36 months)</li>
+                    </ul>
+
+                    <h3>Tips Before Taking a Gold Loan</h3>
+                    <ul>
+                        <li><strong>Compare lenders:</strong> Check rates from banks and NBFCs before deciding</li>
+                        <li><strong>Check gold valuation:</strong> Understand how the lender values your gold</li>
+                        <li><strong>Read the fine print:</strong> Know the foreclosure charges and auction clauses</li>
+                        <li><strong>Choose EMI wisely:</strong> EMI-based repayment helps build financial discipline</li>
+                        <li><strong>Prepay when possible:</strong> Reduces interest burden significantly on short-tenure loans</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <!-- Related Tools -->
+        <section class="calculator-section">
+            <div class="container">
+                <h2>Explore more money-saving tools</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>General EMI Calculator</h3>
+                        <p>Calculate EMI for home loans, car loans, personal loans with full amortization and prepayment analysis.</p>
+                        <a class="btn btn-secondary" href="/emi-calculator/">Open EMI Calculator</a>
+                    </div>
+                    <div class="card">
+                        <h3>Credit Card Leak Detector</h3>
+                        <p>Project how long credit card debt will take to clear and how extra payments can reduce interest costs.</p>
+                        <a class="btn btn-secondary" href="/credit-card-leak/">Open credit card tool</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#faq">FAQ</a> | <a href="#content">Learn</a> | <a href="/emi-calculator/">EMI Calculators</a> | <a href="/">Home</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../calculations.js"></script>
+    <script src="../insights.js"></script>
+    <script src="../ui.js"></script>
+    <script src="gold-loan-script.js"></script>
+</body>
+</html>
+
