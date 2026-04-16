@@ -3,22 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMI Calculator - FinLeak</title>
-    <meta name="description" content="Calculate EMI for loans, home loans, personal loans, and car loans. Get detailed amortization schedule and total interest breakdown.">
-    <meta name="keywords" content="EMI calculator, loan calculator, home loan EMI, car loan EMI, amortization schedule">
+    <title>EMI Calculator | Loan EMI, Interest & Amortization Tool</title>
+    <meta name="description" content="Calculate loan EMI, total repayment, total interest, and amortization schedules for home loans, personal loans, and car loans with our free EMI calculator.">
+    <meta name="keywords" content="EMI calculator, loan EMI calculator, amortization schedule, home loan EMI, personal loan EMI, car loan EMI">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="author" content="FinLeak">
+    <meta name="theme-color" content="#3498db">
+    <link rel="canonical" href="https://financial-leak-detector.pages.dev/emi-calculator/">
+    <meta property="og:site_name" content="FinLeak">
+    <meta property="og:title" content="EMI Calculator | Loan EMI & Amortization Tool">
+    <meta property="og:description" content="Estimate EMI, total repayment, and total interest for home loans, car loans, and personal loans.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://financial-leak-detector.pages.dev/emi-calculator/">
+    <meta property="og:locale" content="en_IN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="EMI Calculator | FinLeak">
+    <meta name="twitter:description" content="Calculate EMI and compare how tenure, rate, and prepayments change total loan cost.">
     <link rel="stylesheet" href="../styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebPage",
+                    "name": "EMI Calculator",
+                    "url": "https://financial-leak-detector.pages.dev/emi-calculator/",
+                    "description": "Free EMI calculator with loan repayment, interest, and amortization schedule breakdowns."
+                },
+                {
+                    "@type": "WebApplication",
+                    "name": "EMI Calculator",
+                    "url": "https://financial-leak-detector.pages.dev/emi-calculator/",
+                    "applicationCategory": "FinanceApplication",
+                    "operatingSystem": "Any",
+                    "description": "Calculate loan EMI, total repayment, and amortization for multiple loan types.",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "INR"
+                    }
+                },
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "What is a healthy EMI to income ratio?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Many lenders prefer your total EMI obligations to stay below 40 to 50 percent of monthly take-home income. Keeping it lower gives you more room for savings, emergencies, and other financial goals."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Does a shorter tenure always save money?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "A shorter tenure usually lowers total interest because you repay principal faster, but it also increases monthly EMI. The best choice balances affordability with long-term interest savings."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "When should I prepay a loan?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Prepayment helps most in the early years of a loan, when interest forms a larger share of each EMI. Before prepaying, check whether your lender charges prepayment or foreclosure fees."
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    </script>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">💰 FinLeak</div>
+            <a class="logo" href="/">💰 FinLeak</a>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
-                <li><a href="/credit-card-leak">Credit Card</a></li>
-                <li><a href="/emi-calculator">EMI Calculator</a></li>
-                <li><a href="/subscription-leak">Subscriptions</a></li>
+                <li><a href="/credit-card-leak/">Credit Card</a></li>
+                <li><a href="/emi-calculator/">EMI Calculator</a></li>
+                <li><a href="/subscription-leak/">Subscriptions</a></li>
             </ul>
         </div>
     </nav>
@@ -218,6 +286,26 @@
             </div>
         </section>
 
+        <section id="faq" class="faq-section">
+            <div class="container">
+                <h2>EMI calculator FAQ</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4>What is a healthy EMI-to-income ratio?</h4>
+                        <p>As a rule of thumb, total EMIs should usually stay below 40-50% of monthly take-home income. Lower is better because it leaves room for savings, emergencies, and day-to-day expenses.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Does a shorter tenure always save money?</h4>
+                        <p>Usually yes, because a shorter tenure reduces the time you pay interest. The trade-off is a higher monthly EMI, so it only works well if the larger payment comfortably fits your budget.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>When should I prepay a loan?</h4>
+                        <p>Prepayment is most effective in the early years of a loan when the interest portion is highest. Always check your lender's prepayment or foreclosure terms before paying extra.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Educational Content -->
         <section id="content" class="content-section">
             <div class="container">
@@ -285,6 +373,24 @@
                 </article>
             </div>
         </section>
+
+        <section class="calculator-section">
+            <div class="container">
+                <h2>Explore more money-saving tools</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Credit Card Leak Detector</h3>
+                        <p>Project how long credit card debt will take to clear and how extra payments can reduce interest costs.</p>
+                        <a class="btn btn-secondary" href="/credit-card-leak/">Open credit card tool</a>
+                    </div>
+                    <div class="card">
+                        <h3>Subscription Leak Detector</h3>
+                        <p>Track your recurring charges and find easy savings from subscriptions you rarely or never use.</p>
+                        <a class="btn btn-secondary" href="/subscription-leak/">Track subscriptions</a>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -292,7 +398,7 @@
         <div class="container">
             <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
             <div class="footer-links">
-                <a href="#content">Learn</a> | <a href="/">Home</a>
+                <a href="#faq">FAQ</a> | <a href="#content">Learn</a> | <a href="/">Home</a>
             </div>
         </div>
     </footer>

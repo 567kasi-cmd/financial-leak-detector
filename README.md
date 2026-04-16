@@ -70,6 +70,46 @@ git commit -m "your message"
 git push origin main
 ```
 
+## Search Console & SEO
+
+The site now includes:
+
+- `robots.txt`
+- `sitemap.xml`
+- canonical URLs on the main pages
+- page-level social metadata and structured data
+
+After deployment, submit the site to Google Search Console:
+
+1. Open Google Search Console.
+2. Add the property `https://financial-leak-detector.pages.dev/`.
+3. Verify ownership using your preferred method (HTML tag, DNS, or provider-supported flow).
+4. Submit the sitemap:
+
+   - `https://financial-leak-detector.pages.dev/sitemap.xml`
+
+5. Use URL Inspection to request indexing for:
+
+   - `https://financial-leak-detector.pages.dev/`
+   - `https://financial-leak-detector.pages.dev/credit-card-leak/`
+   - `https://financial-leak-detector.pages.dev/emi-calculator/`
+   - `https://financial-leak-detector.pages.dev/subscription-leak/`
+
+Recommended monitoring inside Search Console:
+
+- **Pages / Indexing**: confirm all pages are crawlable and indexed
+- **Sitemaps**: confirm the sitemap is fetched successfully
+- **Performance**: review impressions, queries, CTR, and top landing pages
+- **Enhancements / Rich results**: validate structured data eligibility where applicable
+
+## Traffic Growth Ideas
+
+- Publish one supporting article or FAQ expansion per calculator around a single target query.
+- Improve titles and meta descriptions based on queries that appear in Search Console.
+- Add backlinks from relevant profiles, communities, and personal portfolio pages.
+- Consider moving from the default `pages.dev` URL to a custom domain for stronger branding and trust.
+- Keep internal links between the calculator pages strong so users and search engines discover all tools.
+
 ## Environment Variables
 
 No environment variables are required right now.

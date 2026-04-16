@@ -3,22 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscription Leak Detector - FinLeak</title>
-    <meta name="description" content="Track and analyze your subscription costs. Find unused services, calculate annual expenses, and identify money leaks from recurring subscriptions.">
-    <meta name="keywords" content="subscription tracker, recurring costs, subscription leak, annual expenses, unused subscriptions">
+    <title>Subscription Tracker & Leak Detector | FinLeak</title>
+    <meta name="description" content="Track monthly subscriptions, calculate annual recurring costs, and identify unused services with our free subscription leak detector.">
+    <meta name="keywords" content="subscription tracker, subscription calculator, recurring cost tracker, unused subscriptions, subscription leak detector">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="author" content="FinLeak">
+    <meta name="theme-color" content="#3498db">
+    <link rel="canonical" href="https://financial-leak-detector.pages.dev/subscription-leak/">
+    <meta property="og:site_name" content="FinLeak">
+    <meta property="og:title" content="Subscription Tracker & Leak Detector | FinLeak">
+    <meta property="og:description" content="Calculate yearly subscription costs, uncover unused services, and find quick savings from recurring charges.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://financial-leak-detector.pages.dev/subscription-leak/">
+    <meta property="og:locale" content="en_IN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Subscription Tracker & Leak Detector | FinLeak">
+    <meta name="twitter:description" content="Track recurring costs, find services to cancel, and estimate annual subscription waste.">
     <link rel="stylesheet" href="../styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebPage",
+                    "name": "Subscription Tracker and Leak Detector",
+                    "url": "https://financial-leak-detector.pages.dev/subscription-leak/",
+                    "description": "Free tool to track recurring subscriptions and estimate annual subscription waste."
+                },
+                {
+                    "@type": "WebApplication",
+                    "name": "Subscription Leak Detector",
+                    "url": "https://financial-leak-detector.pages.dev/subscription-leak/",
+                    "applicationCategory": "FinanceApplication",
+                    "operatingSystem": "Any",
+                    "description": "Track recurring subscriptions, calculate annual costs, and identify services to cancel.",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "INR"
+                    }
+                },
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "How much should I spend on subscriptions each month?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "A fixed percentage of income works better than an arbitrary number. Many people keep subscriptions within a small lifestyle budget so recurring charges do not quietly crowd out saving, investing, or debt repayment goals."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Which subscriptions should I cancel first?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Start with the services you never use or rarely use, then review duplicate services that solve the same problem. Canceling one or two forgotten subscriptions can create immediate monthly savings."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Is annual billing always cheaper?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Annual billing often reduces the monthly rate, but it only saves money if you genuinely use the service for the full year. Paying annually for a service you stop using after a few months can cost more overall."
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    </script>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">💰 FinLeak</div>
+            <a class="logo" href="/">💰 FinLeak</a>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
-                <li><a href="/credit-card-leak">Credit Card</a></li>
-                <li><a href="/emi-calculator">EMI Calculator</a></li>
-                <li><a href="/subscription-leak">Subscriptions</a></li>
+                <li><a href="/credit-card-leak/">Credit Card</a></li>
+                <li><a href="/emi-calculator/">EMI Calculator</a></li>
+                <li><a href="/subscription-leak/">Subscriptions</a></li>
             </ul>
         </div>
     </nav>
@@ -214,6 +282,26 @@
             </div>
         </section>
 
+        <section id="faq" class="faq-section">
+            <div class="container">
+                <h2>Subscription leak FAQ</h2>
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <h4>How much should I spend on subscriptions each month?</h4>
+                        <p>There is no universal perfect number, but your subscriptions should fit inside a small lifestyle budget rather than silently replacing savings or debt payments. A good review point is whether you would consciously re-buy each service every month.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Which subscriptions should I cancel first?</h4>
+                        <p>Start with the services you never use or rarely use, then look for overlapping services such as multiple streaming or music apps. Those are usually the fastest wins for immediate savings.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Is annual billing always cheaper?</h4>
+                        <p>Not always. Annual plans often reduce the monthly price, but they only save money if you truly use the service for the full year and can afford the upfront payment without stressing your cash flow.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Educational Content -->
         <section id="content" class="content-section">
             <div class="container">
@@ -301,6 +389,24 @@
                 </article>
             </div>
         </section>
+
+        <section class="calculator-section">
+            <div class="container">
+                <h2>Explore more money-saving tools</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Credit Card Leak Detector</h3>
+                        <p>See how much interest your card balance can generate and compare repayment strategies that reduce payoff time.</p>
+                        <a class="btn btn-secondary" href="/credit-card-leak/">Open credit card tool</a>
+                    </div>
+                    <div class="card">
+                        <h3>EMI Calculator</h3>
+                        <p>Estimate EMI, total interest, and prepayment savings before taking a home, car, or personal loan.</p>
+                        <a class="btn btn-secondary" href="/emi-calculator/">Open EMI calculator</a>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -308,7 +414,7 @@
         <div class="container">
             <p>&copy; 2026 FinLeak - Smart Financial Leak Detector. All rights reserved.</p>
             <div class="footer-links">
-                <a href="#content">Learn</a> | <a href="/">Home</a>
+                <a href="#faq">FAQ</a> | <a href="#content">Learn</a> | <a href="/">Home</a>
             </div>
         </div>
     </footer>

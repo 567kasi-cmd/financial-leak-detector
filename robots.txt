@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://financial-leak-detector.pages.dev/sitemap.xml
+
