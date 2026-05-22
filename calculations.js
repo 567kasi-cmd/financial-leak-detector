@@ -22,10 +22,50 @@ function addMonths(date, months) {
 export function calculateEMI(principal, monthlyRate, totalMonths) {
     if (principal <= 0 || totalMonths <= 0) return 0;
     if (monthlyRate === 0) {
-        return principal / totalMonths;
+        return parseFloat((principal / totalMonths).toFixed(2));
     }
     const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
     return parseFloat(emi.toFixed(2));
+}
+
+/**
+ * Calculates EMI, interest, total payment, and monthly schedule for a standard term loan.
+ * @param {number} principal - Loan amount.
+ * @param {number} annualRatePercent - Annual interest rate in percent.
+ * @param {number} totalMonths - Tenure in months.
+ * @param {Date} loanStartDate - Optional loan start date.
+ * @returns {{emi: number, totalInterest: number, totalPayment: number, monthlyRate: number, monthlyData: Array<object>}}
+ */
+export function calculateLoanRepaymentDetails(principal, annualRatePercent, totalMonths, loanStartDate = new Date()) {
+    if (!Number.isFinite(principal) || principal <= 0 || !Number.isFinite(totalMonths) || totalMonths <= 0) {
+        return {
+            emi: 0,
+            totalInterest: 0,
+            totalPayment: 0,
+            monthlyRate: 0,
+            monthlyData: []
+        };
+    }
+
+    const monthlyRate = Math.max(0, annualRatePercent) / 100 / 12;
+    const emi = calculateEMI(principal, monthlyRate, totalMonths);
+    const schedule = generateAmortizationSchedule(principal, monthlyRate, emi, totalMonths, loanStartDate);
+    const totalInterest = schedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
+
+    return {
+        emi,
+        totalInterest: parseFloat(totalInterest.toFixed(2)),
+        totalPayment: parseFloat((principal + totalInterest).toFixed(2)),
+        monthlyRate: parseFloat((monthlyRate * 100).toFixed(4)),
+        monthlyData: schedule.map((entry) => ({
+            month: entry.month,
+            date: entry.date,
+            payment: entry.emi,
+            principal: entry.principalComponent,
+            interest: entry.interestComponent,
+            balance: entry.closingBalance
+        }))
+    };
 }
 
 /**
@@ -87,39 +127,36 @@ export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetail
     let cumulativePrincipalPaid = 0;
     let cumulativeInterestPaid = 0;
     let monthCounter = 0;
-
+    let prepaymentIndex = 0;
+    const sortedPrepayments = [...prepayments]
+        .filter((prepayment) => prepayment && prepayment.amount > 0 && prepayment.date)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
     const monthlyRate = loanDetails.annualInterestRate / 12;
-
-    // Create a temporary schedule to iterate and apply prepayments
-    let tempSchedule = [...baseSchedule]; // Copy the base schedule
+    const tempSchedule = [...baseSchedule];
 
     for (let i = 0; i < tempSchedule.length && currentBalance > 0; i++) {
         monthCounter++;
         const scheduleEntryDate = new Date(tempSchedule[i].date);
+        const openingBalanceBeforeEvents = currentBalance;
 
-        // Apply prepayments that occur before or on this schedule entry date
-        prepayments.filter(p => p.date <= scheduleEntryDate && p.amount > 0)
-            .forEach(prepayment => {
-                if (currentBalance > 0) {
-                    currentBalance -= prepayment.amount;
-                    // Ensure balance doesn't go negative due to overpayment
-                    currentBalance = Math.max(0, currentBalance);
-                }
-                // Mark prepayment as applied to avoid re-applying
-                prepayment.amount = 0;
-            });
+        while (prepaymentIndex < sortedPrepayments.length && sortedPrepayments[prepaymentIndex].date <= scheduleEntryDate) {
+            const appliedPrepaymentAmount = Math.min(currentBalance, sortedPrepayments[prepaymentIndex].amount);
+            currentBalance = Math.max(0, currentBalance - appliedPrepaymentAmount);
+            cumulativePrincipalPaid += appliedPrepaymentAmount;
+            prepaymentIndex++;
+        }
+        const openingBalanceForEmi = currentBalance;
 
         if (currentBalance <= 0) {
-            // Loan paid off early due to prepayments
             modifiedSchedule.push({
                 month: monthCounter,
                 date: scheduleEntryDate.toISOString().split('T')[0],
-                openingBalance: parseFloat((currentBalance + (prepayments.reduce((sum, p) => sum + p.amount, 0))).toFixed(2)), // This might be tricky, need to ensure correct opening balance
+                openingBalance: parseFloat(openingBalanceBeforeEvents.toFixed(2)),
                 emi: 0,
                 principalComponent: 0,
                 interestComponent: 0,
                 closingBalance: 0,
-                cumulativePrincipalPaid: parseFloat(loanDetails.loanAmount.toFixed(2)), // All principal paid
+                cumulativePrincipalPaid: parseFloat(cumulativePrincipalPaid.toFixed(2)),
                 cumulativeInterestPaid: parseFloat(cumulativeInterestPaid.toFixed(2))
             });
             break;
@@ -149,7 +186,7 @@ export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetail
         modifiedSchedule.push({
             month: monthCounter,
             date: scheduleEntryDate.toISOString().split('T')[0],
-            openingBalance: parseFloat((currentBalance + principalComponent).toFixed(2)),
+            openingBalance: parseFloat(openingBalanceForEmi.toFixed(2)),
             emi: parseFloat(currentEmi.toFixed(2)),
             principalComponent: parseFloat(principalComponent.toFixed(2)),
             interestComponent: parseFloat(interestComponent.toFixed(2)),
@@ -427,6 +464,20 @@ export function calculateBreakEvenPoint(schedule) {
  * @returns {object} Detailed simulation results
  */
 export function simulateDebtPayoff(principal, annualRate, minPaymentPercent, extraPayment = 0) {
+    if (!Number.isFinite(principal) || principal <= 0 || !Number.isFinite(annualRate) || annualRate < 0 ||
+        !Number.isFinite(minPaymentPercent) || minPaymentPercent <= 0 || !Number.isFinite(extraPayment) || extraPayment < 0) {
+        return {
+            monthlyRate: '0.0000',
+            months: 0,
+            years: 0,
+            remainingMonths: 0,
+            totalInterest: 0,
+            totalPaid: 0,
+            monthlyData: [],
+            monthlyDataLimited: []
+        };
+    }
+
     const monthlyRate = annualRate / 100 / 12;
     let balance = principal;
     let totalInterest = 0;
@@ -439,7 +490,8 @@ export function simulateDebtPayoff(principal, annualRate, minPaymentPercent, ext
         totalInterest += interest;
 
         const minPayment = balance * (minPaymentPercent / 100);
-        const totalPayment = Math.max(minPayment + extraPayment, balance + interest);
+        const scheduledPayment = minPayment + extraPayment;
+        const totalPayment = Math.min(balance + interest, scheduledPayment);
 
         balance = Math.max(0, balance + interest - totalPayment);
         months++;
@@ -451,7 +503,7 @@ export function simulateDebtPayoff(principal, annualRate, minPaymentPercent, ext
             payment: parseFloat(totalPayment.toFixed(2))
         });
 
-        if (balance > principal * 5) break; // Debt exploding - stop
+        if (scheduledPayment <= 0 || balance > principal * 5) break; // Debt exploding - stop
     }
 
     return {

@@ -119,12 +119,16 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
 
         // For comparison mode
         originalLoan: {
+            principal: originalLoan.principal,
+            annualInterestRate: originalLoan.annualInterestRate,
             emi: originalLoan.emi,
             totalInterest: originalLoan.totalInterest,
             totalPayment: originalLoan.totalPayment,
             totalMonths: originalLoan.totalMonths
         },
         modifiedLoan: { // Summary of the loan after actual prepayments
+            principal: modifiedLoan.principal,
+            annualInterestRate: modifiedLoan.annualInterestRate,
             emi: modifiedLoan.emi,
             totalInterest: modifiedLoan.totalInterest,
             totalPayment: modifiedLoan.totalPayment,

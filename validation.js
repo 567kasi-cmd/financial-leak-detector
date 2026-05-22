@@ -42,19 +42,25 @@ export function validatePrepaymentInputs(rawPrepayments) {
     const validatedData = [];
 
     rawPrepayments.forEach((raw, index) => {
+        const hasAmount = raw.amount !== '';
+        const hasDate = raw.date !== '';
         const amount = parseFloat(raw.amount);
         const date = new Date(raw.date);
 
         // If both are empty, skip this entry (it's optional)
-        if (!raw.amount && !raw.date) {
+        if (!hasAmount && !hasDate) {
             return;
         }
 
         let itemErrors = [];
-        if (isNaN(amount) || amount <= 0) {
+        if (!hasAmount) {
+            itemErrors.push(`Prepayment ${index + 1}: Amount is required when a date is provided.`);
+        } else if (isNaN(amount) || amount <= 0) {
             itemErrors.push(`Prepayment ${index + 1}: Amount must be a positive number.`);
         }
-        if (isNaN(date.getTime())) {
+        if (!hasDate) {
+            itemErrors.push(`Prepayment ${index + 1}: Date is required when an amount is provided.`);
+        } else if (isNaN(date.getTime())) {
             itemErrors.push(`Prepayment ${index + 1}: Date must be valid.`);
         }
 
@@ -82,19 +88,25 @@ export function validatePrepaymentInputs(rawPrepayments) {
 export function validateHypotheticalPrepayment(amountStr, dateStr) {
     const errors = [];
     let validatedData = null;
+    const hasAmount = amountStr !== '';
+    const hasDate = dateStr !== '';
 
     // If both are empty, it's valid and there's no data
-    if (!amountStr && !dateStr) {
+    if (!hasAmount && !hasDate) {
         return { isValid: true, errors: [], validatedData: null };
     }
 
     const amount = parseFloat(amountStr);
     const date = new Date(dateStr);
 
-    if (isNaN(amount) || amount <= 0) {
+    if (!hasAmount) {
+        errors.push('Hypothetical Prepayment: Amount is required when a date is provided.');
+    } else if (isNaN(amount) || amount <= 0) {
         errors.push('Hypothetical Prepayment: Amount must be a positive number.');
     }
-    if (isNaN(date.getTime())) {
+    if (!hasDate) {
+        errors.push('Hypothetical Prepayment: Date is required when an amount is provided.');
+    } else if (isNaN(date.getTime())) {
         errors.push('Hypothetical Prepayment: Date must be valid.');
     }
 

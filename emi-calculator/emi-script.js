@@ -2,6 +2,7 @@
 
 import { simulateLoan } from '../loanSimulator.js'; // Import the main simulation function
 import { validateLoanInputs, validatePrepaymentInputs, validateHypotheticalPrepayment } from '../validation.js'; // New validation module
+import { attachSyncedSlider, debounce, formatCurrency, formatDate, setButtonLoading } from '../shared.js';
 
 // Form elements
 const emiForm = document.getElementById('emi-form');
@@ -13,6 +14,15 @@ const messageContainer = document.getElementById('message-container'); // Assumi
 let emiPieChartInstance;
 let principalInterestChartInstance;
 let balanceOverTimeChartInstance;
+let hasRenderedOnce = false;
+
+const loanTypePresets = {
+    home: { rate: 8.5, years: 20, months: 0, amount: 5000000 },
+    car: { rate: 9.25, years: 5, months: 0, amount: 800000 },
+    personal: { rate: 13.5, years: 3, months: 0, amount: 500000 },
+    education: { rate: 10.25, years: 7, months: 0, amount: 1200000 },
+    business: { rate: 14.5, years: 10, months: 0, amount: 2500000 }
+};
 
 // Event listeners
 emiForm.addEventListener('submit', handleEmiFormSubmit);
@@ -33,27 +43,66 @@ document.addEventListener('DOMContentLoaded', () => {
         loanStartDateInput.value = formattedDate;
     }
 
-    const hypotheticalPrepaymentDateInput = document.getElementById('hypothetical-prepayment-date');
-    if (hypotheticalPrepaymentDateInput) {
-        hypotheticalPrepaymentDateInput.value = formattedDate;
-    }
     // Add one initial prepayment field for convenience
     addPrepaymentInput();
     displayMessage('info', 'Add a prepayment to see how much interest you can save!', 'prepayment-tip');
+
+    attachSyncedSlider(document.getElementById('loan-amount'), {
+        min: 50000,
+        max: 50000000,
+        step: 50000,
+        defaultValue: 5000000,
+        formatter: (value) => formatCurrency(value, 0, 0)
+    });
+
+    attachSyncedSlider(document.getElementById('interest-rate'), {
+        min: 0,
+        max: 20,
+        step: 0.1,
+        defaultValue: 8.5,
+        formatter: (value) => `${value}%`
+    });
+
+    attachSyncedSlider(document.getElementById('loan-tenure-years'), {
+        min: 0,
+        max: 30,
+        step: 1,
+        defaultValue: 20,
+        formatter: (value) => `${value}y`
+    });
+
+    attachSyncedSlider(document.getElementById('loan-tenure-months'), {
+        min: 0,
+        max: 11,
+        step: 1,
+        defaultValue: 0,
+        formatter: (value) => `${value}m`
+    });
+
+    const loanTypeSelect = document.getElementById('loan-type');
+    if (loanTypeSelect) {
+        loanTypeSelect.addEventListener('change', handleLoanTypePresetChange);
+        handleLoanTypePresetChange();
+    }
 });
 
-// Helper for currency formatting
-const formatCurrency = (amount) => {
-    if (isNaN(amount)) return '₹0';
-    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-};
+function handleLoanTypePresetChange() {
+    const loanType = document.getElementById('loan-type')?.value;
+    const preset = loanTypePresets[loanType];
 
-// Helper for date formatting
-const formatDate = (date) => {
-    if (!date) return '';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(date).toLocaleDateString('en-IN', options);
-};
+    if (!preset) {
+        return;
+    }
+
+    document.getElementById('loan-amount').value = String(preset.amount);
+    document.getElementById('interest-rate').value = String(preset.rate);
+    document.getElementById('loan-tenure-years').value = String(preset.years);
+    document.getElementById('loan-tenure-months').value = String(preset.months);
+
+    ['loan-amount', 'interest-rate', 'loan-tenure-years', 'loan-tenure-months'].forEach((id) => {
+        document.getElementById(id).dispatchEvent(new Event('input', { bubbles: true }));
+    });
+}
 
 /**
  * Displays a message to the user.
@@ -65,7 +114,7 @@ function displayMessage(type, message, id = '') {
     if (!messageContainer) return;
 
     const messageDiv = document.createElement('div');
-    messageDiv.className = `alert alert-${type}`; // Assuming CSS classes for alerts
+    messageDiv.className = `message-banner message-${type}`;
     if (id) {
         messageDiv.id = id;
     }
@@ -97,6 +146,10 @@ function clearMessages(id = '') {
  */
 async function handleEmiFormSubmit(e) {
     e.preventDefault();
+    await runSimulation({ scrollToResults: true });
+}
+
+async function runSimulation({ scrollToResults = false } = {}) {
     clearMessages(); // Clear previous messages
 
     // Show loading
@@ -175,13 +228,15 @@ async function handleEmiFormSubmit(e) {
 
         // Display results
         displaySimulationResults(simulationResult);
+        hasRenderedOnce = true;
 
         // Scroll to results
-        document.getElementById('emi-results').scrollIntoView({ behavior: 'smooth' });
+        if (scrollToResults) {
+            document.getElementById('emi-results').scrollIntoView({ behavior: 'smooth' });
+        }
 
         hideEmiLoading();
     } catch (error) {
-        console.error("Simulation error:", error);
         displayMessage('error', 'Calculation error: ' + error.message);
         hideEmiLoading();
     }
@@ -203,13 +258,6 @@ function addPrepaymentInput() {
         </div>
     `;
     prepaymentsList.appendChild(newPrepaymentDiv);
-
-    // Set default date to today for new prepayment
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    newPrepaymentDiv.querySelector('.prepayment-item-date').value = `${yyyy}-${mm}-${dd}`;
 }
 
 /**
@@ -251,6 +299,16 @@ function displaySimulationResults(simulationResult) {
     const finalMonths = modifiedLoan.totalMonths % 12;
     document.getElementById('loan-tenure-display').textContent = `${finalYears}y ${finalMonths}m`;
 
+    document.getElementById('compare-original-emi').textContent = formatCurrency(originalLoan.emi);
+    document.getElementById('compare-original-interest').textContent = formatCurrency(originalLoan.totalInterest);
+    document.getElementById('compare-original-payment').textContent = formatCurrency(originalLoan.totalPayment);
+    document.getElementById('compare-original-tenure').textContent = formatTenure(originalLoan.totalMonths);
+    document.getElementById('compare-modified-emi').textContent = formatCurrency(modifiedLoan.emi);
+    document.getElementById('compare-modified-interest').textContent = formatCurrency(modifiedLoan.totalInterest);
+    document.getElementById('compare-modified-payment').textContent = formatCurrency(modifiedLoan.totalPayment);
+    document.getElementById('compare-modified-tenure').textContent = formatTenure(modifiedLoan.totalMonths);
+    updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth);
+
     // Update Loan Progress
     document.getElementById('progress-emis-paid').textContent = loanProgress.paidEmis.toLocaleString('en-IN');
     document.getElementById('progress-principal-paid').textContent = formatCurrency(loanProgress.principalPaid);
@@ -270,8 +328,12 @@ function displaySimulationResults(simulationResult) {
             document.getElementById('impact-emi-percentage-savings').textContent = `${prepaymentImpact.alternativeReduceEmiImpact.percentageSavings.toFixed(2)}%`;
         }
     } else {
-        // Hide or clear prepayment impact section if no actual prepayments or no impact
-        document.querySelector('.prepayment-impact-grid').innerHTML = '<p class="text-center">No actual prepayments made or no significant impact observed.</p>';
+        document.getElementById('impact-tenure-interest-saved').textContent = formatCurrency(0);
+        document.getElementById('impact-tenure-months-reduced').textContent = '0';
+        document.getElementById('impact-tenure-percentage-savings').textContent = '0.00%';
+        document.getElementById('impact-emi-new-emi').textContent = formatCurrency(modifiedLoan.emi);
+        document.getElementById('impact-emi-interest-saved').textContent = formatCurrency(0);
+        document.getElementById('impact-emi-percentage-savings').textContent = '0.00%';
     }
 
 
@@ -568,28 +630,61 @@ function displaySmartInsights(insights, breakEvenMonth) {
  * Show EMI loading animation
  */
 function showEmiLoading() {
-    const spinner = document.getElementById('emi-loading-spinner');
-    if (spinner) {
-        spinner.classList.remove('hidden');
+    setButtonLoading(
+        emiForm.querySelector('button[type="submit"]'),
+        document.getElementById('emi-loading-spinner'),
+        true,
+        'Run Simulation',
+        'Calculating...'
+    );
+}
+
+function formatTenure(totalMonths) {
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    return `${years}y ${months}m`;
+}
+
+function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth) {
+    const primary = document.getElementById('loan-summary-primary');
+    const interest = document.getElementById('loan-summary-interest');
+    const prepayment = document.getElementById('loan-summary-prepayment');
+
+    if (prepaymentImpact && prepaymentImpact.interestSaved > 0) {
+        primary.textContent = `Current prepayments already save ${formatCurrency(prepaymentImpact.interestSaved)} and shorten the loan by ${prepaymentImpact.monthsReduced} months.`;
+    } else if (loanHealth.score < 60) {
+        primary.textContent = 'This structure looks expensive. Focus on lowering tenure or adding early prepayments.';
+    } else {
+        primary.textContent = 'This loan structure is workable. Use the what-if section to test early lump-sum savings.';
     }
-    const btnText = document.querySelector('#emi-form button[type="submit"] .btn-text');
-    if (btnText) {
-        btnText.textContent = 'Calculating...';
+
+    const interestRatio = originalLoan.totalInterest > 0 && modifiedLoan.totalPayment > 0
+        ? (modifiedLoan.totalInterest / modifiedLoan.totalPayment) * 100
+        : 0;
+    interest.textContent = `Interest makes up about ${interestRatio.toFixed(1)}% of total cash outflow in the current scenario.`;
+
+    if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
+        prepayment.textContent = `Your what-if prepayment can save another ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} if timed well.`;
+    } else {
+        prepayment.textContent = 'Early prepayments usually have the highest effect before the loan crosses the break-even point.';
     }
-    emiForm.querySelector('button[type="submit"]').disabled = true;
 }
 
 /**
  * Hide EMI loading animation
  */
 function hideEmiLoading() {
-    const spinner = document.getElementById('emi-loading-spinner');
-    if (spinner) {
-        spinner.classList.add('hidden');
-    }
-    const btnText = document.querySelector('#emi-form button[type="submit"] .btn-text');
-    if (btnText) {
-        btnText.textContent = 'Run Simulation';
-    }
-    emiForm.querySelector('button[type="submit"]').disabled = false;
+    setButtonLoading(
+        emiForm.querySelector('button[type="submit"]'),
+        document.getElementById('emi-loading-spinner'),
+        false,
+        'Run Simulation',
+        'Calculating...'
+    );
 }
+
+emiForm.addEventListener('input', debounce(() => {
+    if (hasRenderedOnce) {
+        runSimulation();
+    }
+}, 300));

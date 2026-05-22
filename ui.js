@@ -1,845 +1,431 @@
-// ui.js - Enhanced UI rendering and interaction management
+import { assessDebtRisk, simulateDebtPayoff } from './calculations.js';
+import { generateDebtInsights } from './insights.js';
+import {
+    createMessageController,
+    debounce,
+    ensureMessageContainer,
+    formatCurrency,
+    formatDurationMonths,
+    setButtonLoading
+} from './shared.js';
 
-let pieChart = null;
-let compositionChart = null;
-let balanceTrendChart = null;
-
-/**
- * Display calculation results in UI with enhanced features
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual interest rate
- * @param {number} minPaymentPercent - Minimum payment percentage
- * @param {number} extraPayment - Extra payment amount
- */
-function displayResults(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
-    // Update metric cards with enhanced formatting
-    document.getElementById('monthly-rate').textContent = `${results.monthlyRate}%`;
-    document.getElementById('payoff-time').textContent = formatPayoffTime(results);
-    document.getElementById('total-paid').textContent = formatCurrency(results.totalPaid);
-    document.getElementById('money-lost').textContent = formatCurrency(results.totalInterest);
-
-    // Update breakdown with enhanced styling
-    document.getElementById('breakdown-principal').textContent = formatCurrency(principal);
-    document.getElementById('breakdown-interest').textContent = formatCurrency(results.totalInterest);
-    document.getElementById('breakdown-extra').textContent = formatCurrency(extraPayment * results.months);
-
-    const interestPercent = ((results.totalInterest / principal) * 100).toFixed(0);
-    document.getElementById('breakdown-percentage').textContent = `${interestPercent}%`;
-
-    // Calculate and update financial health score
-    const healthScore = calculateFinancialHealthScore(results, principal, annualRate, minPaymentPercent, extraPayment);
-    updateFinancialHealthScore(healthScore);
-
-    // Update risk meter
-    const riskAssessment = assessDebtRisk(principal, 50000);
-    updateRiskMeter(riskAssessment.riskScore, riskAssessment.riskLevel, riskAssessment.advice);
-
-    // Update charts with enhanced data
-    updateCharts(results, principal, extraPayment);
-
-    // Display enhanced insights
-    const insights = generateEnhancedInsights(results, principal, annualRate, minPaymentPercent, extraPayment);
-    displayInsights(insights);
-
-    // Display prepayment scenarios with interactive elements
-    displayPrepaymentScenarios(results, principal, annualRate, minPaymentPercent);
-
-    // Display amortization schedule
-    displayAmortizationSchedule(results);
-
-    // Set up schedule toggle
-    setupScheduleToggle(results);
-
-    // Add export functionality
-    addExportButtons(results, principal, annualRate, minPaymentPercent, extraPayment);
-
-    // Show results section with smooth animation
-    showResultsSection();
-
-    // Add sticky behavior to results
-    makeResultsSticky();
-}
-
-/**
- * Format payoff time with better readability
- * @param {object} results - Calculation results
- * @returns {string} Formatted time string
- */
-function formatPayoffTime(results) {
-    if (results.months <= 12) {
-        return `${results.months} months`;
-    } else if (results.months <= 24) {
-        return `${results.years} year ${results.remainingMonths} months`;
-    } else {
-        return `${results.years} years ${results.remainingMonths} months`;
-    }
-}
-
-/**
- * Format currency with Indian numbering
- * @param {number} amount - Amount to format
- * @returns {string} Formatted currency string
- */
-function formatCurrency(amount) {
-    return `₹${Number(amount).toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })}`;
-}
-
-/**
- * Calculate comprehensive financial health score
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- * @param {number} extraPayment - Extra payment
- * @returns {object} Health score data
- */
-function calculateFinancialHealthScore(results, principal, annualRate, minPaymentPercent, extraPayment) {
-    let score = 100;
-
-    // Interest burden (0-30 points)
-    const interestRatio = results.totalInterest / principal;
-    if (interestRatio > 0.5) score -= 30;
-    else if (interestRatio > 0.3) score -= 20;
-    else if (interestRatio > 0.2) score -= 10;
-
-    // Tenure length (0-25 points)
-    if (results.months > 60) score -= 25;
-    else if (results.months > 36) score -= 15;
-    else if (results.months > 24) score -= 10;
-
-    // Payment behavior (0-20 points)
-    const monthlyRate = annualRate / 100 / 12;
-    const firstMonthInterest = principal * monthlyRate;
-    const minPaymentAmount = principal * (minPaymentPercent / 100);
-
-    if (minPaymentAmount < firstMonthInterest) score -= 20; // Debt trap
-    else if (extraPayment > 0) score += 10; // Good behavior
-
-    // Interest rate (0-15 points)
-    if (annualRate > 30) score -= 15;
-    else if (annualRate > 20) score -= 10;
-    else if (annualRate > 15) score -= 5;
-
-    // Extra payment bonus (0-10 points)
-    if (extraPayment > principal * 0.05) score += 10;
-    else if (extraPayment > 0) score += 5;
-
-    score = Math.max(0, Math.min(100, score));
-
-    let level = 'Excellent';
-    let color = '#27ae60';
-    let icon = '🟢';
-
-    if (score < 30) {
-        level = 'High Risk';
-        color = '#e74c3c';
-        icon = '🔴';
-    } else if (score < 60) {
-        level = 'Moderate Risk';
-        color = '#f39c12';
-        icon = '🟡';
-    } else if (score < 80) {
-        level = 'Good';
-        color = '#3498db';
-        icon = '🟢';
+function createChart(target, config, existingChart) {
+    if (!target || typeof Chart === 'undefined') {
+        return existingChart || null;
     }
 
-    return {
-        score: score,
-        level: level,
-        color: color,
-        icon: icon,
-        factors: {
-            interestBurden: interestRatio,
-            tenure: results.months,
-            paymentBehavior: extraPayment > 0,
-            interestRate: annualRate
-        }
-    };
-}
-
-/**
- * Update financial health score display
- * @param {object} healthData - Health score data
- */
-function updateFinancialHealthScore(healthData) {
-    const healthElement = document.getElementById('financial-health-score');
-    if (!healthElement) return;
-
-    healthElement.innerHTML = `
-        <div class="health-score-display">
-            <div class="health-score-circle" style="background: ${healthData.color}">
-                <div class="health-score-number">${healthData.score}</div>
-                <div class="health-score-label">${healthData.level}</div>
-            </div>
-            <div class="health-score-details">
-                <div class="health-factor">
-                    <span>Interest Burden</span>
-                    <span>${(healthData.factors.interestBurden * 100).toFixed(0)}%</span>
-                </div>
-                <div class="health-factor">
-                    <span>Tenure</span>
-                    <span>${healthData.factors.tenure} months</span>
-                </div>
-                <div class="health-factor">
-                    <span>Extra Payments</span>
-                    <span>${healthData.factors.paymentBehavior ? 'Yes' : 'No'}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Update risk meter visualization
- * @param {number} riskScore - Risk score (0-100)
- * @param {string} riskLevel - Risk level text
- * @param {string} advice - Advice text
- */
-function updateRiskMeter(riskScore, riskLevel, advice) {
-    document.getElementById('risk-level').textContent = riskLevel;
-    document.getElementById('risk-bar').style.width = `${riskScore}%`;
-
-    // Color based on risk
-    const bar = document.getElementById('risk-bar');
-    if (riskScore <= 30) {
-        bar.style.backgroundColor = '#27ae60';
-    } else if (riskScore <= 60) {
-        bar.style.backgroundColor = '#f39c12';
-    } else {
-        bar.style.backgroundColor = '#e74c3c';
+    if (existingChart) {
+        existingChart.destroy();
     }
 
-    document.getElementById('risk-details').innerHTML = `<small>${advice}</small>`;
+    return new Chart(target, config);
 }
 
-/**
- * Update all charts with enhanced data
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} extraPayment - Extra payment amount
- */
-function updateCharts(results, principal, extraPayment = 0) {
-    updatePieChart(principal, results.totalInterest);
-    updateCompositionChart(principal, results.totalInterest, extraPayment);
-    updateBalanceTrendChart(results.monthlyDataLimited, extraPayment);
-}
+function validateDebtInputs(outstanding, rate, minPayment, extraPayment) {
+    const errors = [];
 
-/**
- * Update pie chart (debt composition)
- * @param {number} principal - Principal amount
- * @param {number} totalInterest - Total interest
- */
-function updatePieChart(principal, totalInterest) {
-    const ctx = document.getElementById('pie-chart');
-    if (!ctx) return;
-
-    if (pieChart) {
-        pieChart.destroy();
+    if (!Number.isFinite(outstanding) || outstanding <= 0) {
+        errors.push('Outstanding amount must be greater than 0.');
+    }
+    if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+        errors.push('Interest rate must be between 0 and 100.');
+    }
+    if (!Number.isFinite(minPayment) || minPayment <= 0 || minPayment > 100) {
+        errors.push('Minimum payment must be between 0 and 100.');
+    }
+    if (!Number.isFinite(extraPayment) || extraPayment < 0) {
+        errors.push('Extra payment cannot be negative.');
     }
 
-    pieChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Principal', 'Interest'],
-            datasets: [{
-                data: [principal, totalInterest],
-                backgroundColor: ['#3498db', '#e74c3c'],
-                borderColor: '#fff',
-                borderWidth: 3,
-                hoverBorderWidth: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.parsed;
-                            const percentage = ((value / (principal + totalInterest)) * 100).toFixed(1);
-                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
+    return errors;
 }
 
-/**
- * Update composition bar chart with extra payment
- * @param {number} principal - Principal amount
- * @param {number} totalInterest - Total interest
- * @param {number} extraPayment - Extra payment amount
- */
-function updateCompositionChart(principal, totalInterest, extraPayment = 0) {
-    const ctx = document.getElementById('composition-chart');
-    if (!ctx) return;
+function buildScenarioText(baseResults, principal, annualRate, minPaymentPercent, extraPayment) {
+    const simulated = simulateDebtPayoff(principal, annualRate, minPaymentPercent, extraPayment);
+    const monthsSaved = Math.max(0, baseResults.months - simulated.months);
+    const interestSaved = Math.max(0, baseResults.totalInterest - simulated.totalInterest);
 
-    if (compositionChart) {
-        compositionChart.destroy();
-    }
-
-    const totalExtra = extraPayment * Math.min(60, Math.ceil((principal + totalInterest) / (principal * 0.02 + extraPayment))); // Estimate months
-
-    compositionChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Payment Breakdown'],
-            datasets: [
-                {
-                    label: 'Principal',
-                    data: [principal],
-                    backgroundColor: '#3498db',
-                    borderRadius: 4
-                },
-                {
-                    label: 'Interest',
-                    data: [totalInterest],
-                    backgroundColor: '#e74c3c',
-                    borderRadius: 4
-                },
-                {
-                    label: 'Extra Payments',
-                    data: [totalExtra],
-                    backgroundColor: '#27ae60',
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.dataset.label}: ${formatCurrency(context.parsed.x)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    stacked: true,
-                    ticks: {
-                        callback: function(value) {
-                            return formatCurrency(value);
-                        }
-                    }
-                }
-            }
-        }
-    });
+    return `Clear in ${formatDurationMonths(simulated.months)} | Save ${formatCurrency(interestSaved)} | Finish ${monthsSaved} month(s) sooner`;
 }
 
-/**
- * Update balance trend line chart with enhanced features
- * @param {array} monthlyData - Monthly data points
- */
-function updateBalanceTrendChart(monthlyData) {
-    const ctx = document.getElementById('balance-trend-chart');
-    if (!ctx) return;
+function renderInsights(listElement, insights) {
+    listElement.innerHTML = '';
 
-    if (balanceTrendChart) {
-        balanceTrendChart.destroy();
-    }
-
-    const labels = [];
-    const balances = [];
-    const interestData = [];
-
-    monthlyData.forEach(data => {
-        labels.push(data.month % 12 === 0 ? `${data.month / 12}y` : '');
-        balances.push(data.balance);
-        interestData.push(data.interest);
-    });
-
-    balanceTrendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Outstanding Balance',
-                    data: balances,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Monthly Interest',
-                    data: interestData,
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    yAxisID: 'y1',
-                    hidden: true // Hidden by default
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            if (context.datasetIndex === 0) {
-                                return `Balance: ${formatCurrency(context.parsed.y)}`;
-                            } else {
-                                return `Interest: ${formatCurrency(context.parsed.y)}`;
-                            }
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Balance (₹)'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return formatCurrency(value);
-                        }
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: false,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Interest (₹)'
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                }
-            }
-        }
-    });
-}
-
-/**
- * Display enhanced insights with better formatting
- * @param {array} insights - Array of insight objects
- */
-function displayInsights(insights) {
-    const list = document.getElementById('insight-list');
-    list.innerHTML = '';
-
-    insights.forEach(insight => {
-        const li = document.createElement('li');
-        li.className = `insight-item ${insight.type}`;
-
-        li.innerHTML = `
+    insights.forEach((insight) => {
+        const item = document.createElement('li');
+        item.className = `insight-item ${insight.type}`;
+        item.innerHTML = `
             <div class="insight-header">
                 <span class="insight-icon">${insight.icon}</span>
                 <span class="insight-title">${insight.title}</span>
             </div>
             <p class="insight-message">${insight.message}</p>
             <p class="insight-action"><strong>Action:</strong> ${insight.action}</p>
-            ${insight.savings ? `<div class="insight-savings">💰 Potential Savings: ${formatCurrency(insight.savings)}</div>` : ''}
         `;
-
-        list.appendChild(li);
+        listElement.appendChild(item);
     });
 }
 
-/**
- * Display prepayment scenarios with interactive sliders
- * @param {object} results - Current results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- */
-function displayPrepaymentScenarios(results, principal, annualRate, minPaymentPercent) {
-    const scenarios = [
-        { extra: 5000, element: 'scenario-1' },
-        { extra: 10000, element: 'scenario-2' },
-        { extra: 25000, element: 'scenario-3' }
-    ];
-
-    scenarios.forEach(scenario => {
-        const simulated = simulateDebtPayoff(principal, annualRate, minPaymentPercent, scenario.extra);
-        const monthsSaved = results.months - simulated.months;
-        const interestSaved = results.totalInterest - simulated.totalInterest;
-
-        const text = `Clear in ${simulated.months} months (${monthsSaved} months faster) | Save ${formatCurrency(interestSaved)} in interest`;
-        document.getElementById(scenario.element).textContent = text;
-    });
-
-    // Add interactive slider for custom scenarios
-    addInteractiveSlider(results, principal, annualRate, minPaymentPercent);
-}
-
-/**
- * Add interactive slider for custom prepayment scenarios
- * @param {object} results - Current results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- */
-function addInteractiveSlider(results, principal, annualRate, minPaymentPercent) {
-    const sliderContainer = document.querySelector('.prepayment-scenarios');
-    if (!sliderContainer) return;
-
-    const sliderDiv = document.createElement('div');
-    sliderDiv.className = 'scenario-item interactive-scenario';
-    sliderDiv.innerHTML = `
-        <h4>🎚️ Custom Extra Payment</h4>
-        <input type="range" id="extra-payment-slider" min="0" max="${principal * 0.1}" step="1000" value="0">
-        <div class="slider-values">
-            <span>₹0</span>
-            <span id="slider-value">₹0</span>
-            <span>${formatCurrency(principal * 0.1)}</span>
-        </div>
-        <p id="custom-scenario-result">Add extra payment above to see results</p>
-    `;
-
-    sliderContainer.appendChild(sliderDiv);
-
-    // Add slider event listener
-    const slider = document.getElementById('extra-payment-slider');
-    const valueDisplay = document.getElementById('slider-value');
-    const resultDisplay = document.getElementById('custom-scenario-result');
-
-    slider.addEventListener('input', function() {
-        const extraAmount = parseInt(this.value);
-        valueDisplay.textContent = formatCurrency(extraAmount);
-
-        if (extraAmount > 0) {
-            const simulated = simulateDebtPayoff(principal, annualRate, minPaymentPercent, extraAmount);
-            const monthsSaved = results.months - simulated.months;
-            const interestSaved = results.totalInterest - simulated.totalInterest;
-
-            resultDisplay.textContent = `Clear in ${simulated.months} months (${monthsSaved} months faster) | Save ${formatCurrency(interestSaved)} in interest`;
-        } else {
-            resultDisplay.textContent = 'Add extra payment above to see results';
-        }
-    });
-}
-
-/**
- * Add export and share functionality
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- * @param {number} extraPayment - Extra payment
- */
-function addExportButtons(results, principal, annualRate, minPaymentPercent, extraPayment) {
-    const resultsSection = document.getElementById('results');
-    if (!resultsSection) return;
-
-    // Remove existing export buttons
-    const existingButtons = resultsSection.querySelector('.export-buttons');
-    if (existingButtons) existingButtons.remove();
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'export-buttons';
-    buttonContainer.innerHTML = `
-        <button class="btn btn-secondary" onclick="exportToPDF(results, principal, annualRate, minPaymentPercent, extraPayment)">
-            📄 Download Report
-        </button>
-        <button class="btn btn-secondary" onclick="shareResults(results, principal)">
-            📤 Share Results
-        </button>
-    `;
-
-    // Insert after metrics grid
-    const metricsGrid = resultsSection.querySelector('.metrics-grid');
-    if (metricsGrid) {
-        metricsGrid.insertAdjacentElement('afterend', buttonContainer);
+function renderDebtTable(tbody, tfoot, headerRow, results, mode = 'full') {
+    if (!tbody) {
+        return;
     }
-}
-
-/**
- * Export results to PDF (placeholder - would need pdf library)
- * @param {object} results - Results data
- * @param {number} principal - Principal
- * @param {number} annualRate - Rate
- * @param {number} minPaymentPercent - Min payment %
- * @param {number} extraPayment - Extra payment
- */
-function exportToPDF(results, principal, annualRate, minPaymentPercent, extraPayment) {
-    alert('PDF export feature would be implemented with a library like jsPDF. This is a placeholder.');
-}
-
-/**
- * Share results (placeholder)
- * @param {object} results - Results data
- * @param {number} principal - Principal
- */
-function shareResults(results, principal) {
-    const shareText = `My credit card analysis: ₹${principal.toLocaleString('en-IN')} debt at ${results.monthlyRate}% monthly rate. Payoff in ${results.months} months, total interest ₹${results.totalInterest.toLocaleString('en-IN')}. Check out FinLeak for your financial analysis!`;
-
-    if (navigator.share) {
-        navigator.share({
-            title: 'Credit Card Analysis',
-            text: shareText,
-            url: window.location.href
-        });
-    } else {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(shareText).then(() => {
-            alert('Results copied to clipboard!');
-        });
-    }
-}
-
-/**
- * Show results section with smooth animation
- */
-function showResultsSection() {
-    const resultsSection = document.getElementById('results');
-    resultsSection.classList.remove('hidden');
-    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-/**
- * Make results section sticky on scroll
- */
-function makeResultsSticky() {
-    const resultsSection = document.getElementById('results');
-    if (!resultsSection) return;
-
-    window.addEventListener('scroll', function() {
-        const rect = resultsSection.getBoundingClientRect();
-        if (rect.top <= 100) {
-            resultsSection.classList.add('sticky-results');
-        } else {
-            resultsSection.classList.remove('sticky-results');
-        }
-    });
-}
-
-/**
- * Show loading animation
- */
-function showLoading() {
-    const spinner = document.getElementById('loading-spinner');
-    if (spinner) {
-        spinner.classList.remove('hidden');
-    }
-}
-
-/**
- * Hide loading animation
- */
-function hideLoading() {
-    const spinner = document.getElementById('loading-spinner');
-    if (spinner) {
-        spinner.classList.add('hidden');
-    }
-}
-
-/**
- * Display amortization schedule in a professional table
- * @param {object} results - Calculation results with monthlyData
- * @param {string} mode - 'full' for monthly, 'yearly' for annual summary
- */
-function displayAmortizationSchedule(results, mode = 'full') {
-    const tbody = document.getElementById('amortizationBody') || document.getElementById('amortization-body');
-    const tfoot = document.getElementById('amortizationFooter') || document.getElementById('amortization-footer');
-    const thead = document.querySelector('.amortization-table thead tr');
-    if (!tbody || !tfoot || !thead) return;
 
     tbody.innerHTML = '';
-    tfoot.innerHTML = '';
+    if (tfoot) {
+        tfoot.innerHTML = '';
+    }
 
-    if (mode === 'yearly') {
-        renderAmortizationHeader(thead, ['Year', 'Total EMI', 'Total Principal', 'Total Interest', 'Ending Balance']);
+    const headerLabels = mode === 'yearly'
+        ? ['Year', 'Total Payment', 'Principal', 'Interest', 'Ending Balance']
+        : ['Month', 'Payment', 'Principal', 'Interest', 'Balance'];
 
-        // Aggregate by year
-        const yearlyData = {};
-        results.monthlyData.forEach(data => {
-            const year = Math.ceil(data.month / 12);
-            if (!yearlyData[year]) {
-                yearlyData[year] = {
-                    year: year,
-                    totalPayment: 0,
-                    totalPrincipal: 0,
-                    totalInterest: 0,
-                    balance: data.balance
+    if (headerRow) {
+        headerRow.innerHTML = '';
+        headerLabels.forEach((label) => {
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.textContent = label;
+            headerRow.appendChild(th);
+        });
+    }
+
+    const rows = mode === 'yearly'
+        ? Object.values(results.monthlyData.reduce((accumulator, entry) => {
+            const year = Math.ceil(entry.month / 12);
+            if (!accumulator[year]) {
+                accumulator[year] = {
+                    period: year,
+                    payment: 0,
+                    principal: 0,
+                    interest: 0,
+                    balance: entry.balance
                 };
             }
-            yearlyData[year].totalPayment += data.payment;
-            yearlyData[year].totalPrincipal += data.payment - data.interest;
-            yearlyData[year].totalInterest += data.interest;
+
+            accumulator[year].payment += entry.payment;
+            accumulator[year].principal += entry.payment - entry.interest;
+            accumulator[year].interest += entry.interest;
+            accumulator[year].balance = entry.balance;
+            return accumulator;
+        }, {}))
+        : results.monthlyData.map((entry) => ({
+            period: entry.month,
+            payment: entry.payment,
+            principal: entry.payment - entry.interest,
+            interest: entry.interest,
+            balance: entry.balance
+        }));
+
+    const fragment = document.createDocumentFragment();
+    rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        [row.period, row.payment, row.principal, row.interest, row.balance].forEach((value, index) => {
+            const td = document.createElement('td');
+            if (index === 0) {
+                td.textContent = String(value);
+            } else {
+                td.className = index === 2 ? 'currency principal' : index === 3 ? 'currency interest' : index === 4 ? 'currency balance' : 'currency';
+                td.textContent = formatCurrency(value, 2, 2);
+            }
+            tr.appendChild(td);
         });
+        fragment.appendChild(tr);
+    });
+    tbody.appendChild(fragment);
 
-        const bodyFragment = document.createDocumentFragment();
-        Object.values(yearlyData).forEach(data => {
-            bodyFragment.appendChild(createAmortizationRow([
-                { value: data.year },
-                { value: formatCurrency(data.totalPayment), className: 'currency' },
-                { value: formatCurrency(data.totalPrincipal), className: 'currency principal' },
-                { value: formatCurrency(data.totalInterest), className: 'currency interest' },
-                { value: formatCurrency(data.balance), className: 'currency balance' }
-            ]));
+    if (tfoot) {
+        const footerRow = document.createElement('tr');
+        footerRow.className = 'summary-row';
+        const totalPrincipal = results.monthlyData.reduce((sum, entry) => sum + (entry.payment - entry.interest), 0);
+        const footerCells = ['Total', results.totalPaid, totalPrincipal, results.totalInterest, '-'];
+        footerCells.forEach((value, index) => {
+            const td = document.createElement('td');
+            if (index === 0 || value === '-') {
+                td.textContent = String(value);
+            } else {
+                td.className = index === 2 ? 'currency principal' : index === 3 ? 'currency interest' : 'currency';
+                td.textContent = formatCurrency(value, 2, 2);
+            }
+            footerRow.appendChild(td);
         });
-        tbody.appendChild(bodyFragment);
-
-        // Summary for yearly
-        const totalPrincipal = Object.values(yearlyData).reduce((sum, y) => sum + y.totalPrincipal, 0);
-        const totalInterest = Object.values(yearlyData).reduce((sum, y) => sum + y.totalInterest, 0);
-        const footerFragment = document.createDocumentFragment();
-        footerFragment.appendChild(createAmortizationRow([
-            { value: 'Total', strong: true },
-            { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
-            { value: formatCurrency(totalPrincipal), className: 'currency principal', strong: true },
-            { value: formatCurrency(totalInterest), className: 'currency interest', strong: true },
-            { value: '-', className: 'currency balance', strong: true }
-        ], 'summary-row'));
-        tfoot.appendChild(footerFragment);
-
-    } else {
-        renderAmortizationHeader(thead, ['Month', 'EMI', 'Principal', 'Interest', 'Balance']);
-
-        const dataToShow = results.monthlyData;
-
-        let totalPrincipalPaid = 0;
-        let totalInterestPaid = 0;
-
-        const bodyFragment = document.createDocumentFragment();
-        dataToShow.forEach(data => {
-            const principalPaid = data.payment - data.interest;
-            totalPrincipalPaid += principalPaid;
-            totalInterestPaid += data.interest;
-
-            bodyFragment.appendChild(createAmortizationRow([
-                { value: data.month },
-                { value: formatCurrency(data.payment), className: 'currency' },
-                { value: formatCurrency(principalPaid), className: 'currency principal' },
-                { value: formatCurrency(data.interest), className: 'currency interest' },
-                { value: formatCurrency(data.balance), className: 'currency balance' }
-            ]));
-        });
-        tbody.appendChild(bodyFragment);
-
-        const footerFragment = document.createDocumentFragment();
-        footerFragment.appendChild(createAmortizationRow([
-            { value: 'Total', strong: true },
-            { value: formatCurrency(results.totalPaid), className: 'currency', strong: true },
-            { value: formatCurrency(totalPrincipalPaid), className: 'currency principal', strong: true },
-            { value: formatCurrency(totalInterestPaid), className: 'currency interest', strong: true },
-            { value: '-', className: 'currency balance', strong: true }
-        ], 'summary-row'));
-        tfoot.appendChild(footerFragment);
-
+        tfoot.appendChild(footerRow);
     }
 }
 
-function renderAmortizationHeader(headerRow, labels) {
-    headerRow.innerHTML = '';
-
-    labels.forEach(label => {
-        const th = document.createElement('th');
-        th.scope = 'col';
-        th.textContent = label;
-        headerRow.appendChild(th);
-    });
-}
-
-function createAmortizationRow(cells, className = '') {
-    const row = document.createElement('tr');
-
-    if (className) {
-        row.className = className;
+function mountScenarioSlider(container, baseResults, principal, annualRate, minPaymentPercent, sliderIdPrefix) {
+    if (!container) {
+        return;
     }
 
-    cells.forEach(cellConfig => {
-        const td = document.createElement('td');
+    const existing = container.querySelector('.interactive-scenario');
+    if (existing) {
+        existing.remove();
+    }
 
-        if (cellConfig.className) {
-            td.className = cellConfig.className;
-        }
+    const max = Math.max(1000, Math.round(principal * 0.1));
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scenario-item interactive-scenario';
+    wrapper.innerHTML = `
+        <h4>Custom extra payment</h4>
+        <input type="range" id="${sliderIdPrefix}-slider" min="0" max="${max}" step="500" value="0">
+        <div class="slider-values">
+            <span>${formatCurrency(0)}</span>
+            <span id="${sliderIdPrefix}-value">${formatCurrency(0)}</span>
+            <span>${formatCurrency(max)}</span>
+        </div>
+        <p id="${sliderIdPrefix}-result">Move the slider to test an extra monthly payment.</p>
+    `;
+    container.appendChild(wrapper);
 
-        if (cellConfig.strong) {
-            const strong = document.createElement('strong');
-            strong.textContent = cellConfig.value;
-            td.appendChild(strong);
-        } else {
-            td.textContent = cellConfig.value;
-        }
+    const slider = wrapper.querySelector('input');
+    const value = wrapper.querySelector(`#${sliderIdPrefix}-value`);
+    const result = wrapper.querySelector(`#${sliderIdPrefix}-result`);
 
-        row.appendChild(td);
+    slider.addEventListener('input', () => {
+        const extra = Number(slider.value);
+        value.textContent = formatCurrency(extra);
+        result.textContent = extra > 0
+            ? buildScenarioText(baseResults, principal, annualRate, minPaymentPercent, extra)
+            : 'Move the slider to test an extra monthly payment.';
     });
-
-    return row;
 }
 
-/**
- * Set up schedule toggle buttons
- * @param {object} results - Calculation results
- */
-function setupScheduleToggle(results) {
-    const toggleFull = document.getElementById('toggle-full');
-    const toggleYearly = document.getElementById('toggle-yearly');
+export function createDebtCalculatorApp(config) {
+    const form = document.getElementById(config.formId);
+    if (!form) {
+        return;
+    }
 
-    if (!toggleFull || !toggleYearly) return;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const spinner = document.getElementById(config.spinnerId);
+    const resultsSection = document.getElementById(config.resultsSectionId);
+    const chartCard = document.getElementById(config.chartCardId);
+    const messageContainer = ensureMessageContainer(form.closest('.card') || form, config.messageContainerId);
+    const messages = createMessageController(messageContainer);
 
-    // Remove existing event listeners
-    toggleFull.replaceWith(toggleFull.cloneNode(true));
-    toggleYearly.replaceWith(toggleYearly.cloneNode(true));
+    let hasRenderedOnce = false;
+    let balanceChart = null;
+    let pieChart = null;
+    let compositionChart = null;
 
-    // Get fresh references
-    const newToggleFull = document.getElementById('toggle-full');
-    const newToggleYearly = document.getElementById('toggle-yearly');
+    const runCalculation = ({ scrollIntoView = false, forceErrors = false } = {}) => {
+        messages.clear();
 
-    // Set initial state
-    newToggleFull.classList.add('active');
-    newToggleYearly.classList.remove('active');
+        const outstanding = parseFloat(document.getElementById(config.inputIds.outstanding).value);
+        const annualRate = parseFloat(document.getElementById(config.inputIds.rate).value);
+        const minPaymentPercent = parseFloat(document.getElementById(config.inputIds.minPayment).value);
+        const extraPayment = parseFloat(document.getElementById(config.inputIds.extraPayment).value || '0');
 
-    // Add event listeners
-    newToggleFull.addEventListener('click', function() {
-        if (newToggleFull.classList.contains('active')) return;
-        newToggleFull.classList.add('active');
-        newToggleYearly.classList.remove('active');
-        displayAmortizationSchedule(results, 'full');
+        const errors = validateDebtInputs(outstanding, annualRate, minPaymentPercent, extraPayment);
+        if (errors.length > 0) {
+            if (hasRenderedOnce || forceErrors) {
+                messages.show('warning', errors[0]);
+            }
+            return false;
+        }
+
+        setButtonLoading(submitButton, spinner, true, config.idleButtonText, config.loadingButtonText);
+
+        try {
+            const results = simulateDebtPayoff(outstanding, annualRate, minPaymentPercent, extraPayment);
+            const insights = generateDebtInsights(results, outstanding, annualRate, minPaymentPercent, extraPayment);
+            const risk = assessDebtRisk(outstanding, config.assumedMonthlyIncome || 50000);
+
+            document.getElementById(config.outputIds.monthlyRate).textContent = `${results.monthlyRate}%`;
+            document.getElementById(config.outputIds.payoffTime).textContent = formatDurationMonths(results.months);
+            document.getElementById(config.outputIds.totalPaid).textContent = formatCurrency(results.totalPaid);
+            document.getElementById(config.outputIds.totalInterest).textContent = formatCurrency(results.totalInterest);
+            document.getElementById(config.outputIds.principal).textContent = formatCurrency(outstanding);
+            document.getElementById(config.outputIds.breakdownInterest).textContent = formatCurrency(results.totalInterest);
+            document.getElementById(config.outputIds.breakdownExtra).textContent = formatCurrency(extraPayment * results.months);
+            document.getElementById(config.outputIds.breakdownPercentage).textContent = `${Math.round((results.totalInterest / outstanding) * 100)}%`;
+
+            if (config.outputIds.healthScore) {
+                const health = document.getElementById(config.outputIds.healthScore);
+                health.innerHTML = `
+                    <div class="health-score-display">
+                        <div class="health-score-circle" style="background:${risk.riskScore > 60 ? '#e74c3c' : risk.riskScore > 30 ? '#f39c12' : '#27ae60'}">
+                            <div class="health-score-number">${100 - risk.riskScore}</div>
+                            <div class="health-score-label">${risk.riskLevel}</div>
+                        </div>
+                        <div class="health-score-details">
+                            <div class="health-factor"><span>Total payoff time</span><span>${formatDurationMonths(results.months)}</span></div>
+                            <div class="health-factor"><span>Total interest</span><span>${formatCurrency(results.totalInterest)}</span></div>
+                            <div class="health-factor"><span>Extra payment</span><span>${formatCurrency(extraPayment)}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (config.outputIds.riskLevel) {
+                document.getElementById(config.outputIds.riskLevel).textContent = risk.riskLevel;
+                document.getElementById(config.outputIds.riskDetails).innerHTML = `<small>${risk.advice}</small>`;
+                const riskBar = document.getElementById(config.outputIds.riskBar);
+                riskBar.style.width = `${risk.riskScore}%`;
+                riskBar.style.backgroundColor = risk.riskScore > 60 ? '#e74c3c' : risk.riskScore > 30 ? '#f39c12' : '#27ae60';
+            }
+
+            if (config.outputIds.scenarios) {
+                config.outputIds.scenarios.forEach((scenario) => {
+                    document.getElementById(scenario.elementId).textContent = buildScenarioText(
+                        results,
+                        outstanding,
+                        annualRate,
+                        minPaymentPercent,
+                        scenario.extra
+                    );
+                });
+            }
+
+            if (config.outputIds.insightsList) {
+                renderInsights(document.getElementById(config.outputIds.insightsList), insights);
+            }
+
+            if (config.outputIds.tableBody) {
+                renderDebtTable(
+                    document.getElementById(config.outputIds.tableBody),
+                    config.outputIds.tableFooter ? document.getElementById(config.outputIds.tableFooter) : null,
+                    config.outputIds.tableHeader ? document.querySelector(config.outputIds.tableHeader) : null,
+                    results,
+                    'full'
+                );
+
+                if (config.outputIds.toggleFull && config.outputIds.toggleYearly) {
+                    const toggleFull = document.getElementById(config.outputIds.toggleFull);
+                    const toggleYearly = document.getElementById(config.outputIds.toggleYearly);
+                    toggleFull.onclick = () => {
+                        toggleFull.classList.add('active');
+                        toggleYearly.classList.remove('active');
+                        renderDebtTable(
+                            document.getElementById(config.outputIds.tableBody),
+                            document.getElementById(config.outputIds.tableFooter),
+                            document.querySelector(config.outputIds.tableHeader),
+                            results,
+                            'full'
+                        );
+                    };
+                    toggleYearly.onclick = () => {
+                        toggleYearly.classList.add('active');
+                        toggleFull.classList.remove('active');
+                        renderDebtTable(
+                            document.getElementById(config.outputIds.tableBody),
+                            document.getElementById(config.outputIds.tableFooter),
+                            document.querySelector(config.outputIds.tableHeader),
+                            results,
+                            'yearly'
+                        );
+                    };
+                }
+            }
+
+            if (config.chartIds.pie) {
+                pieChart = createChart(document.getElementById(config.chartIds.pie), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Principal', 'Interest'],
+                        datasets: [{
+                            data: [outstanding, results.totalInterest],
+                            backgroundColor: ['#1f7a8c', '#c44536'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                }, pieChart);
+            }
+
+            if (config.chartIds.balance) {
+                balanceChart = createChart(document.getElementById(config.chartIds.balance), {
+                    type: 'line',
+                    data: {
+                        labels: results.monthlyDataLimited.map((item) => item.month),
+                        datasets: [{
+                            label: 'Balance',
+                            data: results.monthlyDataLimited.map((item) => item.balance),
+                            borderColor: '#1f7a8c',
+                            backgroundColor: 'rgba(31, 122, 140, 0.16)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                }, balanceChart);
+            }
+
+            if (config.chartIds.composition) {
+                compositionChart = createChart(document.getElementById(config.chartIds.composition), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Principal', 'Interest', 'Extra paid'],
+                        datasets: [{
+                            label: 'Amount',
+                            data: [outstanding, results.totalInterest, extraPayment * results.months],
+                            backgroundColor: ['#1f7a8c', '#c44536', '#4caf50']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                }, compositionChart);
+            }
+
+            if (config.outputIds.scenarioContainerId) {
+                const scenarioContainer = document.getElementById(config.outputIds.scenarioContainerId) ||
+                    document.querySelector(config.outputIds.scenarioContainerId);
+                mountScenarioSlider(
+                    scenarioContainer,
+                    results,
+                    outstanding,
+                    annualRate,
+                    minPaymentPercent,
+                    config.outputIds.scenarioContainerId
+                );
+            }
+
+            resultsSection.classList.remove('hidden');
+            if (chartCard) {
+                chartCard.classList.remove('hidden');
+            }
+
+            hasRenderedOnce = true;
+            if (scrollIntoView) {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            return true;
+        } catch (error) {
+            messages.show('error', `Calculation error: ${error.message}`);
+            return false;
+        } finally {
+            setButtonLoading(submitButton, spinner, false, config.idleButtonText, config.loadingButtonText);
+        }
+    };
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        runCalculation({ scrollIntoView: true, forceErrors: true });
     });
 
-    newToggleYearly.addEventListener('click', function() {
-        if (newToggleYearly.classList.contains('active')) return;
-        newToggleYearly.classList.add('active');
-        newToggleFull.classList.remove('active');
-        displayAmortizationSchedule(results, 'yearly');
-    });
+    const debouncedRun = debounce(() => {
+        if (hasRenderedOnce) {
+            runCalculation();
+        }
+    }, 250);
+
+    form.addEventListener('input', debouncedRun);
 }

@@ -93,7 +93,6 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/credit-card-leak/">Credit Card</a></li>
                 <li><a href="/emi-calculator/">Loan Simulator</a></li>
-                <li><a href="/emi-calculator/">Loan Simulator</a></li>
                 <li><a href="/subscription-leak/">Subscriptions</a></li>
             </ul>
         </div>
@@ -120,6 +119,17 @@
                     <div class="card input-card">
                         <h3>Loan Details</h3>
                         <form id="emi-form">
+                            <div class="form-group">
+                                <label for="loan-type">Loan Type</label>
+                                <select id="loan-type">
+                                    <option value="home">Home Loan</option>
+                                    <option value="car">Car Loan</option>
+                                    <option value="personal">Personal Loan</option>
+                                    <option value="education">Education Loan</option>
+                                    <option value="business">Business Loan</option>
+                                </select>
+                                <small>Choose a common loan profile to prefill a sensible rate and tenure.</small>
+                            </div>
                             <div class="form-group">
                                 <label for="loan-amount">Loan Amount (₹)</label>
                                 <input type="number" id="loan-amount" min="0" step="0.01" placeholder="e.g., 50,00,000" required>
@@ -231,6 +241,68 @@
                         <div class="metric-content">
                             <small>Final Tenure</small>
                             <h3 id="loan-tenure-display">0 months</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <h3>Before vs After</h3>
+                    <div class="comparison-grid">
+                        <div class="comparison-panel">
+                            <h4>Original Loan</h4>
+                            <div class="comparison-item">
+                                <span>EMI</span>
+                                <span id="compare-original-emi" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Interest</span>
+                                <span id="compare-original-interest" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Payment</span>
+                                <span id="compare-original-payment" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Tenure</span>
+                                <span id="compare-original-tenure" class="value">0m</span>
+                            </div>
+                        </div>
+                        <div class="comparison-panel">
+                            <h4>After Prepayments</h4>
+                            <div class="comparison-item">
+                                <span>EMI</span>
+                                <span id="compare-modified-emi" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Interest</span>
+                                <span id="compare-modified-interest" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Payment</span>
+                                <span id="compare-modified-payment" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Tenure</span>
+                                <span id="compare-modified-tenure" class="value">0m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <h3>Scenario Summary</h3>
+                    <div class="summary-banner-grid">
+                        <div class="summary-banner">
+                            <small>Best Immediate Move</small>
+                            <p id="loan-summary-primary">Run a simulation to see the clearest next step.</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>Interest Efficiency</small>
+                            <p id="loan-summary-interest">We will estimate how interest-heavy this structure is.</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>Prepayment Signal</small>
+                            <p id="loan-summary-prepayment">Optional prepayments and what-if scenarios will be summarized here.</p>
                         </div>
                     </div>
                 </div>
@@ -481,12 +553,6 @@
         </div>
     </footer>
 
-    <!-- Include the compiled loanSimulator.js (assuming it's in the root) -->
-    <script type="module" src="../loanSimulator.js"></script>
-    <script type="module" src="../calculations.js"></script>
-    <script type="module" src="../insights.js"></script>
-    <script src="../ui.js"></script>
     <script type="module" src="emi-script.js"></script>
-    <script type="module" src="../validation.js"></script>
 </body>
 </html>

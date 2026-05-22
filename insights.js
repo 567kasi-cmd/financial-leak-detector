@@ -1,186 +1,217 @@
-// insights.js - Smart insight generation engine
+import { formatCurrency, formatDurationMonths, formatDate } from './shared.js';
 
-// Helper for currency formatting (local to insights.js)
-const formatCurrency = (amount) => {
-    if (isNaN(amount)) return '₹0';
-    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-};
+/**
+ * Insights for credit-card debt payoff flows.
+ * @param {object} results - Debt payoff result.
+ * @param {number} principal - Outstanding balance.
+ * @param {number} annualRate - APR.
+ * @param {number} minPaymentPercent - Minimum payment percentage.
+ * @param {number} extraPayment - Extra monthly payment.
+ * @returns {Array<object>}
+ */
+export function generateDebtInsights(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
+    const insights = [];
+    const monthlyRate = annualRate / 100 / 12;
+    const firstMonthInterest = principal * monthlyRate;
+    const firstMonthMinimum = principal * (minPaymentPercent / 100);
+    const firstMonthPayment = firstMonthMinimum + extraPayment;
+    const interestRatio = principal > 0 ? results.totalInterest / principal : 0;
 
-// Helper for date formatting (local to insights.js)
-function formatDate(date) {
-    if (!date) return '';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(date).toLocaleDateString('en-IN', options);
+    if (firstMonthPayment <= firstMonthInterest) {
+        insights.push({
+            type: 'danger',
+            icon: '!',
+            title: 'Debt trap risk',
+            message: `Your first payment of ${formatCurrency(firstMonthPayment)} does not fully cover the first month's interest of ${formatCurrency(firstMonthInterest)}.`,
+            action: `Increase the monthly payment above ${formatCurrency(firstMonthInterest)} to start reducing the balance.`
+        });
+    }
+
+    if (results.months >= 600) {
+        insights.push({
+            type: 'danger',
+            icon: '!',
+            title: 'Unsustainably long payoff',
+            message: 'At the current payment pace, the balance does not clear within the 50-year safety limit.',
+            action: 'Raise the payment amount materially or reduce the interest rate.'
+        });
+    } else if (results.months > 120) {
+        insights.push({
+            type: 'warning',
+            icon: 'i',
+            title: 'Long payoff horizon',
+            message: `This payoff plan runs for ${formatDurationMonths(results.months)}.`,
+            action: 'Even a modest extra payment each month can cut years off the timeline.'
+        });
+    }
+
+    if (interestRatio > 1) {
+        insights.push({
+            type: 'danger',
+            icon: '!',
+            title: 'Interest exceeds principal',
+            message: `Total interest of ${formatCurrency(results.totalInterest)} is higher than the original balance.`,
+            action: 'Prioritize this debt before lower-interest goals if possible.'
+        });
+    } else if (interestRatio > 0.5) {
+        insights.push({
+            type: 'warning',
+            icon: 'i',
+            title: 'Heavy interest burden',
+            message: `Interest adds up to ${Math.round(interestRatio * 100)}% of the original balance.`,
+            action: 'Try higher fixed payments instead of relying on minimum payments alone.'
+        });
+    }
+
+    if (extraPayment > 0) {
+        insights.push({
+            type: 'success',
+            icon: '+',
+            title: 'Extra payment strategy active',
+            message: `An extra ${formatCurrency(extraPayment)} each month accelerates the payoff and reduces interest leakage.`,
+            action: 'Keep the extra payment consistent for the strongest impact.'
+        });
+    } else {
+        insights.push({
+            type: 'info',
+            icon: 'i',
+            title: 'Fastest win',
+            message: 'Small recurring extra payments usually have the biggest impact on credit-card debt.',
+            action: 'Test an extra monthly amount in the scenario section below.'
+        });
+    }
+
+    if (insights.length === 0) {
+        insights.push({
+            type: 'success',
+            icon: '+',
+            title: 'Manageable debt plan',
+            message: 'This payoff plan is progressing without major warning signs.',
+            action: 'Review it periodically as rates, income, and cash flow change.'
+        });
+    }
+
+    return insights;
 }
 
 /**
- * Generate enhanced insights with actionable recommendations and savings calculations
- * @param {object} simulationResults - The full simulation result object from loanSimulator.js
- * @returns {array} Array of enhanced insight objects
+ * Insights for the loan simulator flow.
+ * @param {object} simulationResults - Loan simulator result payload.
+ * @returns {Array<object>}
  */
 export function generateEnhancedInsights(simulationResults) {
     const insights = [];
-    const { originalLoan, modifiedLoan, loanProgress, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth } = simulationResults;
+    const { modifiedLoan, loanProgress, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth, breakEvenMonth } = simulationResults;
 
-    const principal = modifiedLoan.principal; // Use original principal for comparison base
-    const annualRate = modifiedLoan.annualInterestRate * 100; // Convert back to percentage for display
-    const monthlyRate = modifiedLoan.annualInterestRate / 12;
+    const principal = modifiedLoan.principal;
     const currentEmi = modifiedLoan.emi;
     const totalMonths = modifiedLoan.totalMonths;
     const totalInterest = modifiedLoan.totalInterest;
-
-    // --- CRITICAL INSIGHTS ---
-
-    // Insight 1: Debt Trap (EMI not covering interest)
-    if (currentEmi < (principal * monthlyRate) && principal > 0) {
-        const requiredPaymentToCoverInterest = Math.ceil(principal * monthlyRate * 1.05); // 5% more than interest
-        insights.push({
-            type: 'danger',
-            icon: '🚨',
-            title: 'CRITICAL: Debt Trap Detected!',
-            message: `Your current EMI (₹${formatCurrency(currentEmi)}) is less than the monthly interest (₹${formatCurrency(principal * monthlyRate)}). Your principal balance is increasing!`,
-            action: `URGENT: Increase your monthly payment to at least ₹${formatCurrency(requiredPaymentToCoverInterest)} to start paying down principal.`,
-            savings: null // No direct savings calculation here, but prevents debt growth
-        });
-    }
-
-    // Insight 2: Extremely High Interest Burden
+    const monthlyRate = modifiedLoan.annualInterestRate / 12;
     const interestRatio = principal > 0 ? totalInterest / principal : 0;
-    if (interestRatio > 1.0) { // Total interest is more than principal
+
+    if (currentEmi < principal * monthlyRate && principal > 0) {
+        const targetPayment = Math.ceil(principal * monthlyRate * 1.05);
         insights.push({
             type: 'danger',
-            icon: '💸',
-            title: 'Extremely High Interest Burden',
-            message: `You'll pay over ${interestRatio.toFixed(1)} times your principal in interest alone. This is extremely expensive debt.`,
-            action: 'Prioritize aggressive prepayments, consider refinancing to a lower rate, or explore balance transfer options.',
-            savings: null
-        });
-    } else if (interestRatio > 0.7) {
-        insights.push({
-            type: 'warning',
-            icon: '⚠️',
-            title: 'High Interest Payments',
-            message: `Total interest is ₹${formatCurrency(totalInterest)} - over 70% of your principal.`,
-            action: 'Increase monthly payments to reduce interest burden. Even small increases help significantly.',
-            savings: null
+            icon: '!',
+            title: 'EMI below interest',
+            message: `The EMI of ${formatCurrency(currentEmi)} is below the monthly interest charge.`,
+            action: `Increase the EMI to at least ${formatCurrency(targetPayment)} to reduce principal consistently.`
         });
     }
 
-    // Insight 3: Very Long Payoff Period
-    if (totalMonths > 600) { // > 50 years, effectively infinite
+    if (interestRatio > 1) {
         insights.push({
             type: 'danger',
-            icon: '⏳',
-            title: 'EXTREMELY Long Repayment Period',
-            message: `At this rate, it will take over 50 years to clear this debt. This is unsustainable.`,
-            action: 'You must significantly increase your monthly payments or reduce the principal through large prepayments.',
-            savings: null
+            icon: '!',
+            title: 'Very expensive loan',
+            message: `Total interest is more than the original principal at ${formatCurrency(totalInterest)}.`,
+            action: 'Consider refinancing, shortening tenure, or making prepayments early.'
         });
-    } else if (totalMonths > 360) { // > 30 years
+    } else if (interestRatio > 0.6) {
         insights.push({
             type: 'warning',
-            icon: '⏳',
-            title: 'Very Long Repayment Period',
-            message: `It will take ${Math.floor(totalMonths / 12)} years and ${totalMonths % 12} months to clear this debt.`,
-            action: 'Consider increasing your EMI or making prepayments to shorten the tenure and save on interest.',
-            savings: null
+            icon: 'i',
+            title: 'High interest burden',
+            message: `Interest adds up to roughly ${Math.round(interestRatio * 100)}% of the borrowed amount.`,
+            action: 'Compare shorter tenure and prepayment options before locking the plan.'
         });
     }
 
-    // --- POSITIVE & ACTIONABLE INSIGHTS ---
-
-    // Insight 4: Actual Prepayment Impact
     if (prepaymentImpact && prepaymentImpact.interestSaved > 0) {
         insights.push({
             type: 'success',
-            icon: '💚',
-            title: 'Actual Prepayments Made a Difference!',
-            message: `Your actual prepayments saved you ₹${formatCurrency(prepaymentImpact.interestSaved)} in interest and reduced your loan tenure by ${prepaymentImpact.monthsReduced} months!`,
-            action: 'Excellent strategy! Keep up the extra payments to accelerate debt freedom.',
-            savings: prepaymentImpact.interestSaved
+            icon: '+',
+            title: 'Prepayments are working',
+            message: `Actual prepayments save ${formatCurrency(prepaymentImpact.interestSaved)} and cut ${prepaymentImpact.monthsReduced} months.`,
+            action: 'Keep prepayments early in the schedule to maximize savings.'
         });
     }
 
-    // Insight 5: Hypothetical Prepayment Impact
     if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
         insights.push({
             type: 'info',
-            icon: '💡',
-            title: '"What If" Prepayment Impact',
-            message: `A hypothetical prepayment of ₹${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} could save you an additional ₹${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} and reduce your loan by ${hypotheticalPrepaymentImpact.monthsReduced} months!`,
-            action: 'Consider making this prepayment if your finances allow.',
-            savings: hypotheticalPrepaymentImpact.interestSaved
+            icon: 'i',
+            title: 'Useful what-if scenario',
+            message: `A prepayment of ${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} can save ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)}.`,
+            action: 'Use this as a target for bonus, windfall, or annual savings planning.'
         });
     }
 
-    // Insight 6: Loan Health Score
+    if (loanProgress.remainingBalance <= 0.01) {
+        insights.push({
+            type: 'success',
+            icon: '+',
+            title: 'Loan closed',
+            message: 'The simulated schedule shows the loan fully paid off.',
+            action: 'Confirm foreclosure charges with the lender if you plan to settle early.'
+        });
+    } else if (loanProgress.monthsRemaining <= 12) {
+        insights.push({
+            type: 'success',
+            icon: '+',
+            title: 'Final stretch',
+            message: `Only ${loanProgress.monthsRemaining} month(s) remain in the simulated schedule.`,
+            action: 'A final prepayment could eliminate a meaningful chunk of remaining interest.'
+        });
+    }
+
     if (loanHealth.score < 60) {
         insights.push({
             type: 'warning',
-            icon: '🩺',
-            title: `Loan Health: ${loanHealth.rating}`,
-            message: `Your loan health score is ${loanHealth.score}/100. ${loanHealth.message}`,
-            action: 'Review your loan details and consider the recommendations to improve your financial standing.'
+            icon: 'i',
+            title: `Loan health: ${loanHealth.rating}`,
+            message: `Health score is ${loanHealth.score}/100. ${loanHealth.message}`,
+            action: 'Review EMI affordability, tenure, and total interest before proceeding.'
         });
     } else if (loanHealth.score >= 80) {
         insights.push({
             type: 'success',
-            icon: '✅',
-            title: `Loan Health: ${loanHealth.rating}`,
-            message: `Your loan health score is ${loanHealth.score}/100. ${loanHealth.message}`,
-            action: 'Keep up the great work in managing your loan!'
+            icon: '+',
+            title: `Loan health: ${loanHealth.rating}`,
+            message: `Health score is ${loanHealth.score}/100. ${loanHealth.message}`,
+            action: 'This structure looks comparatively healthy for a long-term loan.'
         });
     }
 
-    // Insight 7: Early vs. Late Prepayment (if multiple prepayments or hypothetical exists)
-    if (prepaymentImpact && prepaymentImpact.monthsReduced > 0 && prepaymentImpact.interestSaved > 0) {
+    if (breakEvenMonth !== null && breakEvenMonth !== undefined) {
         insights.push({
             type: 'info',
-            icon: '📅',
-            title: 'Power of Early Prepayments',
-            message: 'Prepayments made earlier in the loan tenure have a much larger impact on total interest saved.',
-            action: 'Aim to make prepayments as early as possible in your loan cycle.'
+            icon: 'i',
+            title: 'Principal-over-interest crossover',
+            message: `Principal paid overtakes cumulative interest around month ${breakEvenMonth}.`,
+            action: 'Prepayments before this point usually deliver the highest marginal interest savings.'
         });
     }
 
-    // Insight 8: Break-even point
-    if (simulationResults.breakEvenMonth !== null) {
-        insights.push({
-            type: 'info',
-            icon: '⚖️',
-            title: 'Break-Even Point Reached',
-            message: `You will have paid more principal than interest by month ${simulationResults.breakEvenMonth}.`,
-            action: 'This indicates good progress in your loan repayment journey.'
-        });
-    } else {
-        insights.push({
-            type: 'warning',
-            icon: '📈',
-            title: 'Break-Even Point Not Reached',
-            message: 'You will pay more interest than principal throughout the entire loan tenure.',
-            action: 'Consider increasing payments to reach the break-even point sooner and save interest.'
-        });
-    }
-
-    // Insight 9: Zero Interest Rate (Edge Case)
-    if (annualRate === 0 && principal > 0) {
-        insights.push({
-            type: 'success',
-            icon: '🎉',
-            title: 'Interest-Free Loan!',
-            message: 'Congratulations! Your loan has a 0% interest rate, meaning you only repay the principal amount.',
-            action: 'Ensure you make regular payments to clear the principal on time.'
-        });
-    }
-
-    // Default/Fallback Insight if no specific insights are generated
     if (insights.length === 0) {
         insights.push({
-            type: 'safe',
-            icon: '✅',
-            title: 'Manageable Loan Situation',
-            message: 'Your loan repayment appears to be on track with no major concerns.',
-            action: 'Continue monitoring your loan progress and consider small prepayments to save more.'
+            type: 'success',
+            icon: '+',
+            title: 'Stable loan plan',
+            message: 'The current loan structure does not show any major red flags.',
+            action: 'Keep validating assumptions against lender charges, insurance, and processing fees.'
         });
     }
 
