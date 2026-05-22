@@ -1,335 +1,188 @@
 // insights.js - Smart insight generation engine
 
-/**
- * Generate comprehensive financial insights
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual interest rate
- * @param {number} minPaymentPercent - Minimum payment percentage
- * @param {number} extraPayment - Extra payment (optional)
- * @returns {array} Array of insight objects
- */
-function generateInsights(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
-    const insights = [];
-    const monthlyRate = annualRate / 100 / 12;
-    const firstMonthInterest = principal * monthlyRate;
-    const minPaymentAmount = principal * (minPaymentPercent / 100);
+// Helper for currency formatting (local to insights.js)
+const formatCurrency = (amount) => {
+    if (isNaN(amount)) return '₹0';
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+};
 
-    // Insight 1: Extremely High Interest
-    if (results.totalInterest > principal * 0.7) {
-        insights.push({
-            type: 'danger',
-            icon: '🚨',
-            title: 'Extremely High Interest Rate',
-            message: `You'll pay ₹${formatCurrency(results.totalInterest)} in interest - that's ${((results.totalInterest / principal) * 100).toFixed(0)}% of your principal!`,
-            action: 'Consider balance transfer to 0% APR card or negotiate lower rate with bank.'
-        });
-    } else if (results.totalInterest > principal * 0.5) {
-        insights.push({
-            type: 'warning',
-            icon: '⚠️',
-            title: 'High Interest Payments',
-            message: `Total interest is ₹${formatCurrency(results.totalInterest)} - over 50% of your principal.`,
-            action: 'Increase monthly payments to reduce interest burden.'
-        });
-    }
-
-    // Insight 2: Long Repayment Period
-    if (results.months > 60) {
-        insights.push({
-            type: 'danger',
-            icon: '⏳',
-            title: 'Very Long Repayment Period',
-            message: `It will take ${results.years} years ${results.remainingMonths} months to clear this debt with current payment.`,
-            action: 'Even small increases in monthly payment can save years of payments.'
-        });
-    } else if (results.months > 36) {
-        insights.push({
-            type: 'warning',
-            icon: '⏱️',
-            title: 'Extended Repayment Timeline',
-            message: `Taking ${results.years} years to repay increases total interest significantly.`,
-            action: 'Try to increase payments to ₹${(principal * 0.1).toLocaleString("en-IN")} monthly.'
-        });
-    }
-
-    // Insight 3: Debt Trap (minimum payment < interest)
-    if (minPaymentAmount < firstMonthInterest) {
-        insights.push({
-            type: 'danger',
-            icon: '🔴',
-            title: '⚠️ DEBT TRAP DETECTED',
-            message: 'Your minimum payment (₹' + formatCurrency(minPaymentAmount) + ') is LESS than monthly interest (₹' + formatCurrency(firstMonthInterest) + '). Your debt is GROWING.',
-            action: 'URGENT: Increase payment immediately to avoid debt spiral.'
-        });
-    }
-
-    // Insight 4: Financial Health Assessment
-    const interestRatio = results.totalInterest / principal;
-    if (interestRatio < 0.2) {
-        insights.push({
-            type: 'safe',
-            icon: '✅',
-            title: 'Good Debt Management',
-            message: 'Your interest is only ' + (interestRatio * 100).toFixed(0) + '% of principal - well managed!',
-            action: 'Keep maintaining this payment discipline.'
-        });
-    }
-
-    // Insight 5: Extra Payment Impact
-    if (extraPayment > 0) {
-        const withoutExtra = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
-        const savings = withoutExtra.totalInterest - results.totalInterest;
-
-        insights.push({
-            type: 'success',
-            icon: '💚',
-            title: 'Impact of Extra Payment',
-            message: `Paying ₹${formatCurrency(extraPayment)} extra/month saves ₹${formatCurrency(savings)} in interest and ${withoutExtra.months - results.months} months!`,
-            action: 'This is excellent - keep up the extra payments!'
-        });
-    }
-
-    // Insight 6: Immediate Action
-    if (results.months > 0) {
-        const monthlyPaymentNeeded = (principal + results.totalInterest) / results.months;
-        insights.push({
-            type: 'info',
-            icon: '📊',
-            title: 'Average Monthly Payment',
-            message: `You need to pay ₹${formatCurrency(monthlyPaymentNeeded)} monthly to clear in ${results.months} months.`,
-            action: 'Set up automatic payment to stay on track.'
-        });
-    }
-
-    // Insight 7: Alternative Scenario
-    if (results.months > 24) {
-        const aggressiveExtra = principal * 0.15; // 15% of principal
-        const aggressive = simulateDebtPayoff(principal, annualRate, minPaymentPercent, aggressiveExtra);
-        const interestSaved = results.totalInterest - aggressive.totalInterest;
-
-        insights.push({
-            type: 'suggestion',
-            icon: '💡',
-            title: 'Accelerated Payoff Strategy',
-            message: `If you could pay ₹${formatCurrency(aggressiveExtra)} extra monthly, you'd clear debt in ${aggressive.months} months and save ₹${formatCurrency(interestSaved)}!`,
-            action: "Try to find this amount in your budget - it's game-changing."
-        });
-    }
-
-    // If no negative insights, add encouragement
-    if (insights.length === 0) {
-        insights.push({
-            type: 'safe',
-            icon: '🎉',
-            title: 'Manageable Debt Situation',
-            message: 'Your debt repayment looks reasonable. Keep making regular payments.',
-            action: 'Monitor your progress monthly.'
-        });
-    }
-
-    return insights;
+// Helper for date formatting (local to insights.js)
+function formatDate(date) {
+    if (!date) return '';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(date).toLocaleDateString('en-IN', options);
 }
 
 /**
  * Generate enhanced insights with actionable recommendations and savings calculations
- * @param {object} results - Calculation results
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual interest rate
- * @param {number} minPaymentPercent - Minimum payment percentage
- * @param {number} extraPayment - Extra payment amount
+ * @param {object} simulationResults - The full simulation result object from loanSimulator.js
  * @returns {array} Array of enhanced insight objects
  */
-function generateEnhancedInsights(results, principal, annualRate, minPaymentPercent, extraPayment = 0) {
+export function generateEnhancedInsights(simulationResults) {
     const insights = [];
-    const monthlyRate = annualRate / 100 / 12;
-    const firstMonthInterest = principal * monthlyRate;
-    const minPaymentAmount = principal * (minPaymentPercent / 100);
+    const { originalLoan, modifiedLoan, loanProgress, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth } = simulationResults;
 
-    // Critical Debt Trap Insight
-    if (minPaymentAmount < firstMonthInterest) {
-        const requiredPayment = Math.ceil(firstMonthInterest + 1);
-        const increaseNeeded = requiredPayment - minPaymentAmount;
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, requiredPayment);
+    const principal = modifiedLoan.principal; // Use original principal for comparison base
+    const annualRate = modifiedLoan.annualInterestRate * 100; // Convert back to percentage for display
+    const monthlyRate = modifiedLoan.annualInterestRate / 12;
+    const currentEmi = modifiedLoan.emi;
+    const totalMonths = modifiedLoan.totalMonths;
+    const totalInterest = modifiedLoan.totalInterest;
 
+    // --- CRITICAL INSIGHTS ---
+
+    // Insight 1: Debt Trap (EMI not covering interest)
+    if (currentEmi < (principal * monthlyRate) && principal > 0) {
+        const requiredPaymentToCoverInterest = Math.ceil(principal * monthlyRate * 1.05); // 5% more than interest
         insights.push({
             type: 'danger',
             icon: '🚨',
-            title: 'CRITICAL: Debt Trap Detected',
-            message: `Your minimum payment (₹${minPaymentAmount.toLocaleString('en-IN')}) is LESS than monthly interest (₹${firstMonthInterest.toFixed(0).toLocaleString('en-IN')}). Your debt is GROWING every month!`,
-            action: `Increase your monthly payment by at least ₹${increaseNeeded.toLocaleString('en-IN')} to break the cycle.`,
-            savings: savings.interestSaved
+            title: 'CRITICAL: Debt Trap Detected!',
+            message: `Your current EMI (₹${formatCurrency(currentEmi)}) is less than the monthly interest (₹${formatCurrency(principal * monthlyRate)}). Your principal balance is increasing!`,
+            action: `URGENT: Increase your monthly payment to at least ₹${formatCurrency(requiredPaymentToCoverInterest)} to start paying down principal.`,
+            savings: null // No direct savings calculation here, but prevents debt growth
         });
     }
 
-    // High Interest Burden
-    const interestRatio = results.totalInterest / principal;
-    if (interestRatio > 0.7) {
-        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
-
+    // Insight 2: Extremely High Interest Burden
+    const interestRatio = principal > 0 ? totalInterest / principal : 0;
+    if (interestRatio > 1.0) { // Total interest is more than principal
         insights.push({
             type: 'danger',
             icon: '💸',
             title: 'Extremely High Interest Burden',
-            message: `You'll pay ${interestRatio.toFixed(1)}x your principal in interest alone. This is extremely expensive debt.`,
-            action: `Pay at least ₹${optimalPayment.toLocaleString('en-IN')}/month to reduce interest to a reasonable level.`,
-            savings: savings.interestSaved
+            message: `You'll pay over ${interestRatio.toFixed(1)} times your principal in interest alone. This is extremely expensive debt.`,
+            action: 'Prioritize aggressive prepayments, consider refinancing to a lower rate, or explore balance transfer options.',
+            savings: null
         });
-    } else if (interestRatio > 0.5) {
-        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
-
+    } else if (interestRatio > 0.7) {
         insights.push({
             type: 'warning',
             icon: '⚠️',
             title: 'High Interest Payments',
-            message: `Total interest is ${interestRatio.toFixed(1)}x your principal amount.`,
-            action: `Consider increasing payments to ₹${optimalPayment.toLocaleString('en-IN')}/month.`,
-            savings: savings.interestSaved
+            message: `Total interest is ₹${formatCurrency(totalInterest)} - over 70% of your principal.`,
+            action: 'Increase monthly payments to reduce interest burden. Even small increases help significantly.',
+            savings: null
         });
     }
 
-    // Long Payoff Period
-    if (results.months > 60) {
-        const aggressivePayment = principal * 0.05; // 5% of principal
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, aggressivePayment);
-
+    // Insight 3: Very Long Payoff Period
+    if (totalMonths > 600) { // > 50 years, effectively infinite
         insights.push({
             type: 'danger',
             icon: '⏳',
-            title: 'Very Long Payoff Timeline',
-            message: `It will take ${results.years} years ${results.remainingMonths} months to clear this debt with current payments.`,
-            action: `Pay ₹${aggressivePayment.toLocaleString('en-IN')}/month extra to clear debt in just ${savings.monthsSaved} months.`,
-            savings: savings.interestSaved
+            title: 'EXTREMELY Long Repayment Period',
+            message: `At this rate, it will take over 50 years to clear this debt. This is unsustainable.`,
+            action: 'You must significantly increase your monthly payments or reduce the principal through large prepayments.',
+            savings: null
         });
-    } else if (results.months > 36) {
-        const moderatePayment = principal * 0.03; // 3% of principal
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, moderatePayment);
-
+    } else if (totalMonths > 360) { // > 30 years
         insights.push({
             type: 'warning',
-            icon: '📅',
-            title: 'Extended Payoff Period',
-            message: `Taking ${results.years} years to repay increases total interest significantly.`,
-            action: `Add ₹${moderatePayment.toLocaleString('en-IN')}/month to save ${savings.monthsSaved} months.`,
-            savings: savings.interestSaved
+            icon: '⏳',
+            title: 'Very Long Repayment Period',
+            message: `It will take ${Math.floor(totalMonths / 12)} years and ${totalMonths % 12} months to clear this debt.`,
+            action: 'Consider increasing your EMI or making prepayments to shorten the tenure and save on interest.',
+            savings: null
         });
     }
 
-    // Extra Payment Impact
-    if (extraPayment > 0) {
-        const withoutExtra = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
-        const interestSaved = withoutExtra.totalInterest - results.totalInterest;
-        const monthsSaved = withoutExtra.months - results.months;
+    // --- POSITIVE & ACTIONABLE INSIGHTS ---
 
+    // Insight 4: Actual Prepayment Impact
+    if (prepaymentImpact && prepaymentImpact.interestSaved > 0) {
         insights.push({
             type: 'success',
             icon: '💚',
-            title: 'Extra Payment Impact',
-            message: `Your ₹${extraPayment.toLocaleString('en-IN')}/month extra payment saves you ₹${interestSaved.toLocaleString('en-IN')} in interest and ${monthsSaved} months!`,
+            title: 'Actual Prepayments Made a Difference!',
+            message: `Your actual prepayments saved you ₹${formatCurrency(prepaymentImpact.interestSaved)} in interest and reduced your loan tenure by ${prepaymentImpact.monthsReduced} months!`,
             action: 'Excellent strategy! Keep up the extra payments to accelerate debt freedom.',
-            savings: interestSaved
+            savings: prepaymentImpact.interestSaved
         });
     }
 
-    // Optimal Payment Suggestion
-    if (results.months > 12 && extraPayment === 0) {
-        const optimalPayment = calculateOptimalPayment(principal, annualRate, minPaymentPercent);
-        const savings = calculatePotentialSavings(principal, annualRate, minPaymentPercent, optimalPayment);
-
+    // Insight 5: Hypothetical Prepayment Impact
+    if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
         insights.push({
             type: 'info',
             icon: '💡',
-            title: 'Optimal Payment Strategy',
-            message: `Pay ₹${optimalPayment.toLocaleString('en-IN')}/month to clear debt in 12 months instead of ${results.months} months.`,
-            action: `This would save you ₹${savings.interestSaved.toLocaleString('en-IN')} in interest.`,
-            savings: savings.interestSaved
+            title: '"What If" Prepayment Impact',
+            message: `A hypothetical prepayment of ₹${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} could save you an additional ₹${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} and reduce your loan by ${hypotheticalPrepaymentImpact.monthsReduced} months!`,
+            action: 'Consider making this prepayment if your finances allow.',
+            savings: hypotheticalPrepaymentImpact.interestSaved
         });
     }
 
-    // Interest Rate Analysis
-    if (annualRate > 25) {
+    // Insight 6: Loan Health Score
+    if (loanHealth.score < 60) {
+        insights.push({
+            type: 'warning',
+            icon: '🩺',
+            title: `Loan Health: ${loanHealth.rating}`,
+            message: `Your loan health score is ${loanHealth.score}/100. ${loanHealth.message}`,
+            action: 'Review your loan details and consider the recommendations to improve your financial standing.'
+        });
+    } else if (loanHealth.score >= 80) {
+        insights.push({
+            type: 'success',
+            icon: '✅',
+            title: `Loan Health: ${loanHealth.rating}`,
+            message: `Your loan health score is ${loanHealth.score}/100. ${loanHealth.message}`,
+            action: 'Keep up the great work in managing your loan!'
+        });
+    }
+
+    // Insight 7: Early vs. Late Prepayment (if multiple prepayments or hypothetical exists)
+    if (prepaymentImpact && prepaymentImpact.monthsReduced > 0 && prepaymentImpact.interestSaved > 0) {
+        insights.push({
+            type: 'info',
+            icon: '📅',
+            title: 'Power of Early Prepayments',
+            message: 'Prepayments made earlier in the loan tenure have a much larger impact on total interest saved.',
+            action: 'Aim to make prepayments as early as possible in your loan cycle.'
+        });
+    }
+
+    // Insight 8: Break-even point
+    if (simulationResults.breakEvenMonth !== null) {
+        insights.push({
+            type: 'info',
+            icon: '⚖️',
+            title: 'Break-Even Point Reached',
+            message: `You will have paid more principal than interest by month ${simulationResults.breakEvenMonth}.`,
+            action: 'This indicates good progress in your loan repayment journey.'
+        });
+    } else {
         insights.push({
             type: 'warning',
             icon: '📈',
-            title: 'High Interest Rate',
-            message: `${annualRate}% APR is very high. Consider balance transfer options.`,
-            action: 'Look for 0% APR balance transfer cards to save significantly on interest.'
+            title: 'Break-Even Point Not Reached',
+            message: 'You will pay more interest than principal throughout the entire loan tenure.',
+            action: 'Consider increasing payments to reach the break-even point sooner and save interest.'
         });
     }
 
-    // Positive Feedback
-    if (results.months <= 12 && interestRatio < 0.3) {
+    // Insight 9: Zero Interest Rate (Edge Case)
+    if (annualRate === 0 && principal > 0) {
         insights.push({
             type: 'success',
             icon: '🎉',
-            title: 'Excellent Debt Management',
-            message: 'Your debt payoff strategy is excellent! You\'re managing this very well.',
-            action: 'Keep up the great work. Consider building an emergency fund next.'
+            title: 'Interest-Free Loan!',
+            message: 'Congratulations! Your loan has a 0% interest rate, meaning you only repay the principal amount.',
+            action: 'Ensure you make regular payments to clear the principal on time.'
         });
     }
 
-    // Minimum viable insights
+    // Default/Fallback Insight if no specific insights are generated
     if (insights.length === 0) {
         insights.push({
             type: 'safe',
             icon: '✅',
-            title: 'Manageable Debt Situation',
-            message: 'Your debt situation is manageable with current payment strategy.',
-            action: 'Monitor your progress monthly and consider small payment increases when possible.'
+            title: 'Manageable Loan Situation',
+            message: 'Your loan repayment appears to be on track with no major concerns.',
+            action: 'Continue monitoring your loan progress and consider small prepayments to save more.'
         });
     }
 
     return insights;
-}
-
-
-/**
- * Format currency amount
- * @param {number} amount - Amount to format
- * @returns {string} Formatted string
- */
-function formatCurrency(amount) {
-    return amount.toLocaleString('en-IN', {
-        maximumFractionDigits: 0
-    });
-}
-
-/**
- * Calculate optimal monthly payment for 12-month payoff
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- * @returns {number} Optimal monthly payment
- */
-function calculateOptimalPayment(principal, annualRate, minPaymentPercent) {
-    const monthlyRate = annualRate / 100 / 12;
-    const minPayment = principal * (minPaymentPercent / 100);
-
-    // Calculate payment needed for 12-month payoff
-    // Formula: EMI = [P x R x (1+R)^N] / [(1+R)^N - 1]
-    const n = 12; // 12 months
-    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
-
-    return Math.max(minPayment, Math.ceil(emi));
-}
-
-/**
- * Calculate potential savings with increased payment
- * @param {number} principal - Principal amount
- * @param {number} annualRate - Annual rate
- * @param {number} minPaymentPercent - Min payment percent
- * @param {number} increasedPayment - Increased monthly payment
- * @returns {object} Savings data
- */
-function calculatePotentialSavings(principal, annualRate, minPaymentPercent, increasedPayment) {
-    const current = simulateDebtPayoff(principal, annualRate, minPaymentPercent, 0);
-    const improved = simulateDebtPayoff(principal, annualRate, minPaymentPercent, increasedPayment);
-
-    return {
-        interestSaved: current.totalInterest - improved.totalInterest,
-        monthsSaved: current.months - improved.months,
-        totalSaved: (current.totalInterest - improved.totalInterest) + (increasedPayment * improved.months)
-    };
 }
