@@ -100,14 +100,18 @@ export function validateHypotheticalPrepayment(amountStr, dateStr) {
     const date = new Date(dateStr);
 
     if (!hasAmount) {
-        errors.push('Hypothetical Prepayment: Amount is required when a date is provided.');
-    } else if (isNaN(amount) || amount <= 0) {
-        errors.push('Hypothetical Prepayment: Amount must be a positive number.');
+        errors.push('Simulation Prepayment: Amount is required when a date is provided.');
+    } else if (isNaN(amount)) {
+        errors.push('Simulation Prepayment: Amount must be a valid number.');
+    } else if (amount < 0) {
+        errors.push('Simulation Prepayment: Amount cannot be negative.');
+    } else if (amount === 0) {
+        errors.push('Simulation Prepayment: Amount must be greater than 0.');
     }
     if (!hasDate) {
-        errors.push('Hypothetical Prepayment: Date is required when an amount is provided.');
+        errors.push('Simulation Prepayment: Date is required when an amount is provided.');
     } else if (isNaN(date.getTime())) {
-        errors.push('Hypothetical Prepayment: Date must be valid.');
+        errors.push('Simulation Prepayment: Date must be valid.');
     }
 
     if (errors.length === 0) {

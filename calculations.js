@@ -369,7 +369,13 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
         date: hypotheticalPrepayment.date,
         interestSaved: parseFloat(interestSaved.toFixed(2)),
         monthsReduced: monthsReduced,
-        percentageSavings: parseFloat(percentageSavings.toFixed(2))
+        percentageSavings: parseFloat(percentageSavings.toFixed(2)),
+        resultingLoan: {
+            emi: emi,
+            totalInterest: parseFloat(newTotalInterest.toFixed(2)),
+            totalPayment: parseFloat((baseLoan.principal + newTotalInterest).toFixed(2)),
+            totalMonths: newTotalMonths
+        }
     };
 }
 

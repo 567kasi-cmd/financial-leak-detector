@@ -917,6 +917,94 @@ article li {
     gap: 1rem;
 }
 
+.prepayment-section {
+    border: 1px solid #dfe6ee;
+    border-left: 5px solid transparent;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #fdfefe;
+}
+
+.prepayment-section-actual {
+    border-left-color: var(--success);
+    background: linear-gradient(180deg, rgba(39, 174, 96, 0.05), rgba(255, 255, 255, 0.95));
+}
+
+.prepayment-section-simulated {
+    border-left-color: var(--primary);
+    background: linear-gradient(180deg, rgba(52, 152, 219, 0.07), rgba(255, 255, 255, 0.95));
+}
+
+.prepayment-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.plan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+}
+
+.plan-badge-actual {
+    background: rgba(39, 174, 96, 0.12);
+    color: #1f7a45;
+}
+
+.plan-badge-simulated {
+    background: rgba(52, 152, 219, 0.14);
+    color: #246fa8;
+}
+
+.info-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    background: rgba(44, 62, 80, 0.08);
+    color: var(--secondary);
+    font-size: 0.9rem;
+    cursor: help;
+}
+
+.section-description,
+.helper-text,
+.scenario-context,
+.scenario-highlight {
+    color: #526273;
+    font-size: 0.95rem;
+}
+
+.section-description {
+    margin: 0.5rem 0 1rem;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+}
+
+.checkbox-row input {
+    width: 1rem;
+    height: 1rem;
+}
+
+.simulation-actions {
+    margin-top: 0.5rem;
+}
+
 .comparison-panel {
     padding: 1.25rem;
     border: 1px solid #e8edf3;
@@ -927,6 +1015,44 @@ article li {
 .comparison-panel h4 {
     margin-bottom: 0.75rem;
     color: var(--secondary);
+}
+
+.comparison-panel-simulated {
+    border-color: rgba(52, 152, 219, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(52, 152, 219, 0.05);
+}
+
+.scenario-comparison-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.scenario-comparison-grid {
+    margin-top: 1rem;
+}
+
+.scenario-highlight {
+    font-weight: 700;
+    color: #246fa8;
+    max-width: 28rem;
+}
+
+.scenario-flash {
+    animation: scenarioPulse 0.45s ease;
+}
+
+@keyframes scenarioPulse {
+    0% {
+        transform: translateY(6px);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .summary-banner-grid {
