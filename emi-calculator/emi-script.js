@@ -4,6 +4,7 @@ import { simulateLoan } from '../loanSimulator.js'; // Import the main simulatio
 import { validateLoanInputs, validatePrepaymentInputs } from '../validation.js'; // New validation module
 import { attachSyncedSlider, debounce, formatCurrency, formatDate, setButtonLoading } from '../shared.js';
 
+function initApp() {
 // Form elements
 const emiForm = document.getElementById('emi-form');
 const prepaymentsList = document.getElementById('prepayments-list');
@@ -757,3 +758,10 @@ emiForm.addEventListener('input', debounce(() => {
         runSimulation();
     }
 }, 300));
+}
+
+try {
+    initApp();
+} catch (error) {
+    console.error('App crashed:', error);
+}

@@ -1,5 +1,6 @@
 import { createMessageController, ensureMessageContainer, escapeHtml, formatCurrency } from '../shared.js';
 
+function initApp() {
 let subscriptions = [];
 let subscriptionId = 0;
 let categoryChart = null;
@@ -265,4 +266,11 @@ function renderCancellationList() {
         `;
         container.appendChild(item);
     });
+}
+}
+
+try {
+    initApp();
+} catch (error) {
+    console.error('App crashed:', error);
 }
