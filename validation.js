@@ -35,9 +35,10 @@ export function validateLoanInputs(amount, rate, months, startDateStr) {
  * Validates a list of prepayment inputs.
  * Prepayments are optional. If a row has either amount or date, both must be valid.
  * @param {Array<{amount: string, date: string}>} rawPrepayments - Array of raw prepayment objects.
+ * @param {string} [label='Prepayment'] - Label used in validation messages.
  * @returns {{isValid: boolean, errors: string[], validatedData: Array<{amount: number, date: Date}>}} Validation result.
  */
-export function validatePrepaymentInputs(rawPrepayments) {
+export function validatePrepaymentInputs(rawPrepayments, label = 'Prepayment') {
     const errors = [];
     const validatedData = [];
 
@@ -54,14 +55,14 @@ export function validatePrepaymentInputs(rawPrepayments) {
 
         let itemErrors = [];
         if (!hasAmount) {
-            itemErrors.push(`Prepayment ${index + 1}: Amount is required when a date is provided.`);
+            itemErrors.push(`${label} ${index + 1}: Amount is required when a date is provided.`);
         } else if (isNaN(amount) || amount <= 0) {
-            itemErrors.push(`Prepayment ${index + 1}: Amount must be a positive number.`);
+            itemErrors.push(`${label} ${index + 1}: Amount must be a positive number.`);
         }
         if (!hasDate) {
-            itemErrors.push(`Prepayment ${index + 1}: Date is required when an amount is provided.`);
+            itemErrors.push(`${label} ${index + 1}: Date is required when an amount is provided.`);
         } else if (isNaN(date.getTime())) {
-            itemErrors.push(`Prepayment ${index + 1}: Date must be valid.`);
+            itemErrors.push(`${label} ${index + 1}: Date must be valid.`);
         }
 
         if (itemErrors.length > 0) {

@@ -101,7 +101,15 @@ export function generateDebtInsights(results, principal, annualRate, minPaymentP
  */
 export function generateEnhancedInsights(simulationResults) {
     const insights = [];
-    const { modifiedLoan, loanProgress, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth, breakEvenMonth } = simulationResults;
+    const {
+        modifiedLoan,
+        loanProgress,
+        prepaymentImpact,
+        hypotheticalPrepaymentImpact,
+        futurePrepaymentPlanImpact,
+        loanHealth,
+        breakEvenMonth
+    } = simulationResults;
 
     const principal = modifiedLoan.principal;
     const currentEmi = modifiedLoan.emi;
@@ -149,7 +157,15 @@ export function generateEnhancedInsights(simulationResults) {
         });
     }
 
-    if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
+    if (futurePrepaymentPlanImpact && futurePrepaymentPlanImpact.additionalInterestSaved > 0) {
+        insights.push({
+            type: 'info',
+            icon: 'i',
+            title: 'Future plan adds value',
+            message: `Your planned prepayments can save an additional ${formatCurrency(futurePrepaymentPlanImpact.additionalInterestSaved)} and reduce the schedule by ${futurePrepaymentPlanImpact.additionalMonthsReduced} more month(s).`,
+            action: 'Use the optional reduced EMI only if cash flow matters more than finishing early.'
+        });
+    } else if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
         insights.push({
             type: 'info',
             icon: 'i',

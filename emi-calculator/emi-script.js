@@ -1,13 +1,15 @@
 // emi-script.js - Advanced Loan Simulator Page Logic
 
 import { simulateLoan } from '../loanSimulator.js'; // Import the main simulation function
-import { validateLoanInputs, validatePrepaymentInputs, validateHypotheticalPrepayment } from '../validation.js'; // New validation module
+import { validateLoanInputs, validatePrepaymentInputs } from '../validation.js'; // New validation module
 import { attachSyncedSlider, debounce, formatCurrency, formatDate, setButtonLoading } from '../shared.js';
 
 // Form elements
 const emiForm = document.getElementById('emi-form');
 const prepaymentsList = document.getElementById('prepayments-list');
+const futurePrepaymentsList = document.getElementById('future-prepayments-list');
 const addPrepaymentBtn = document.getElementById('add-prepayment');
+const addFuturePrepaymentBtn = document.getElementById('add-future-prepayment');
 const messageContainer = document.getElementById('message-container'); // Assuming this exists in HTML
 
 // Chart instances
@@ -26,8 +28,18 @@ const loanTypePresets = {
 
 // Event listeners
 emiForm.addEventListener('submit', handleEmiFormSubmit);
-addPrepaymentBtn.addEventListener('click', addPrepaymentInput);
-prepaymentsList.addEventListener('click', handlePrepaymentListClick);
+if (addPrepaymentBtn) {
+    addPrepaymentBtn.addEventListener('click', () => addPrepaymentInput(prepaymentsList, 'actual'));
+}
+if (addFuturePrepaymentBtn) {
+    addFuturePrepaymentBtn.addEventListener('click', () => addPrepaymentInput(futurePrepaymentsList, 'future'));
+}
+if (prepaymentsList) {
+    prepaymentsList.addEventListener('click', handlePrepaymentListClick);
+}
+if (futurePrepaymentsList) {
+    futurePrepaymentsList.addEventListener('click', handlePrepaymentListClick);
+}
 
 
 // Initialize date inputs with current date
@@ -43,9 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loanStartDateInput.value = formattedDate;
     }
 
-    // Add one initial prepayment field for convenience
-    addPrepaymentInput();
-    displayMessage('info', 'Add a prepayment to see how much interest you can save!', 'prepayment-tip');
+    // Add one initial row for both actual and future planning.
+    addPrepaymentInput(prepaymentsList, 'actual');
+    addPrepaymentInput(futurePrepaymentsList, 'future');
+    displayMessage('info', 'Add actual and future prepayments to compare real loan impact with a future plan.', 'prepayment-tip');
 
     attachSyncedSlider(document.getElementById('loan-amount'), {
         min: 50000,
@@ -172,17 +185,10 @@ async function runSimulation({ scrollToResults = false } = {}) {
         return;
     }
 
-    // Collect and validate prepayments
-    const rawPrepayments = [];
-    document.querySelectorAll('.prepayment-item').forEach(item => {
-        const amountStr = item.querySelector('.prepayment-item-amount').value.trim();
-        const dateStr = item.querySelector('.prepayment-item-date').value.trim();
-        if (amountStr || dateStr) { // Only consider if either field has content
-            rawPrepayments.push({ amount: amountStr, date: dateStr });
-        }
-    });
+    // Collect and validate actual prepayments
+    const rawPrepayments = collectPrepaymentRows(prepaymentsList);
 
-    const prepaymentValidation = validatePrepaymentInputs(rawPrepayments);
+    const prepaymentValidation = validatePrepaymentInputs(rawPrepayments, 'Actual prepayment');
     if (!prepaymentValidation.isValid) {
         prepaymentValidation.errors.forEach(err => displayMessage('error', err));
         hideEmiLoading();
@@ -190,23 +196,18 @@ async function runSimulation({ scrollToResults = false } = {}) {
     }
     const prepayments = prepaymentValidation.validatedData; // Use validated and parsed data
 
-    // Collect and validate hypothetical prepayment
-    let hypotheticalPrepayment = null;
-    const hypotheticalAmountStr = document.getElementById('hypothetical-prepayment-amount').value.trim();
-    const hypotheticalDateStr = document.getElementById('hypothetical-prepayment-date').value.trim();
-
-    if (hypotheticalAmountStr || hypotheticalDateStr) { // Only validate if either field has content
-        const hypotheticalValidation = validateHypotheticalPrepayment(hypotheticalAmountStr, hypotheticalDateStr);
-        if (!hypotheticalValidation.isValid) {
-            hypotheticalValidation.errors.forEach(err => displayMessage('error', err));
-            hideEmiLoading();
-            return;
-        }
-        hypotheticalPrepayment = hypotheticalValidation.validatedData;
+    // Collect and validate future prepayment plan
+    const rawFuturePrepayments = collectPrepaymentRows(futurePrepaymentsList);
+    const futurePrepaymentValidation = validatePrepaymentInputs(rawFuturePrepayments, 'Future plan');
+    if (!futurePrepaymentValidation.isValid) {
+        futurePrepaymentValidation.errors.forEach(err => displayMessage('error', err));
+        hideEmiLoading();
+        return;
     }
+    const futurePrepayments = futurePrepaymentValidation.validatedData;
 
     // Clear the "Add prepayment to see savings" tip if prepayments are present
-    if (prepayments.length > 0) {
+    if (prepayments.length > 0 || futurePrepayments.length > 0) {
         clearMessages('prepayment-tip');
     }
 
@@ -223,7 +224,7 @@ async function runSimulation({ scrollToResults = false } = {}) {
             },
             prepayments,
             new Date(), // Current date for loan progress
-            hypotheticalPrepayment
+            futurePrepayments
         );
 
         // Display results
@@ -245,19 +246,24 @@ async function runSimulation({ scrollToResults = false } = {}) {
 /**
  * Adds a new prepayment input group to the form.
  */
-function addPrepaymentInput() {
-    const prepaymentCount = document.querySelectorAll('.prepayment-item').length;
+function addPrepaymentInput(container, scope = 'actual') {
+    if (!container) {
+        return;
+    }
+
+    const scopeLabel = scope === 'future' ? 'Future Plan' : 'Actual Prepayment';
+    const prepaymentCount = container.querySelectorAll('.prepayment-item').length;
     const newPrepaymentDiv = document.createElement('div');
-    newPrepaymentDiv.classList.add('form-group', 'prepayment-item');
+    newPrepaymentDiv.classList.add('form-group', 'prepayment-item', `${scope}-prepayment-item`);
     newPrepaymentDiv.innerHTML = `
-        <label>Prepayment ${prepaymentCount + 1}</label>
+        <label>${scopeLabel} ${prepaymentCount + 1}</label>
         <div class="tenure-inputs">
-            <input type="number" class="prepayment-item-amount" min="0" step="0.01" placeholder="Amount (₹)">
-            <input type="date" class="prepayment-item-date">
+            <input type="number" class="prepayment-item-amount ${scope}-prepayment-item-amount" min="0" step="0.01" placeholder="Amount (₹)">
+            <input type="date" class="prepayment-item-date ${scope}-prepayment-item-date">
             <button type="button" class="btn btn-danger btn-sm remove-prepayment">Remove</button>
         </div>
     `;
-    prepaymentsList.appendChild(newPrepaymentDiv);
+    container.appendChild(newPrepaymentDiv);
 }
 
 /**
@@ -266,12 +272,43 @@ function addPrepaymentInput() {
  */
 function handlePrepaymentListClick(e) {
     if (e.target.classList.contains('remove-prepayment')) {
-        e.target.closest('.prepayment-item').remove();
-        // Re-label remaining prepayments
-        document.querySelectorAll('.prepayment-item').forEach((item, index) => {
-            item.querySelector('label').textContent = `Prepayment ${index + 1}`;
-        });
+        const item = e.target.closest('.prepayment-item');
+        const container = e.target.closest('#prepayments-list, #future-prepayments-list');
+        item?.remove();
+        relabelPrepaymentItems(container, container?.id === 'future-prepayments-list' ? 'Future Plan' : 'Actual Prepayment');
     }
+}
+
+function relabelPrepaymentItems(container, scopeLabel) {
+    if (!container) {
+        return;
+    }
+
+    container.querySelectorAll('.prepayment-item').forEach((item, index) => {
+        const label = item.querySelector('label');
+        if (label) {
+            label.textContent = `${scopeLabel} ${index + 1}`;
+        }
+    });
+}
+
+function collectPrepaymentRows(container) {
+    if (!container) {
+        return [];
+    }
+
+    const rows = [];
+    container.querySelectorAll('.prepayment-item').forEach((item) => {
+        const amountField = item.querySelector('.prepayment-item-amount');
+        const dateField = item.querySelector('.prepayment-item-date');
+        const amountStr = amountField ? amountField.value.trim() : '';
+        const dateStr = dateField ? dateField.value.trim() : '';
+        if (amountStr || dateStr) {
+            rows.push({ amount: amountStr, date: dateStr });
+        }
+    });
+
+    return rows;
 }
 
 
@@ -286,6 +323,7 @@ function displaySimulationResults(simulationResult) {
         loanProgress,
         prepaymentImpact,
         hypotheticalPrepaymentImpact,
+        futurePrepaymentPlanImpact,
         insights,
         updatedSchedule,
         loanHealth
@@ -307,7 +345,18 @@ function displaySimulationResults(simulationResult) {
     document.getElementById('compare-modified-interest').textContent = formatCurrency(modifiedLoan.totalInterest);
     document.getElementById('compare-modified-payment').textContent = formatCurrency(modifiedLoan.totalPayment);
     document.getElementById('compare-modified-tenure').textContent = formatTenure(modifiedLoan.totalMonths);
-    updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth);
+    if (futurePrepaymentPlanImpact) {
+        document.getElementById('compare-future-emi').textContent = formatCurrency(futurePrepaymentPlanImpact.reduceTenure.emi || modifiedLoan.emi);
+        document.getElementById('compare-future-interest').textContent = formatCurrency(futurePrepaymentPlanImpact.reduceTenure.totalInterest);
+        document.getElementById('compare-future-payment').textContent = formatCurrency(futurePrepaymentPlanImpact.reduceTenure.totalPayment);
+        document.getElementById('compare-future-tenure').textContent = formatTenure(futurePrepaymentPlanImpact.reduceTenure.totalMonths);
+    } else {
+        document.getElementById('compare-future-emi').textContent = formatCurrency(modifiedLoan.emi);
+        document.getElementById('compare-future-interest').textContent = formatCurrency(modifiedLoan.totalInterest);
+        document.getElementById('compare-future-payment').textContent = formatCurrency(modifiedLoan.totalPayment);
+        document.getElementById('compare-future-tenure').textContent = formatTenure(modifiedLoan.totalMonths);
+    }
+    updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, futurePrepaymentPlanImpact, loanHealth);
 
     // Update Loan Progress
     document.getElementById('progress-emis-paid').textContent = loanProgress.paidEmis.toLocaleString('en-IN');
@@ -336,16 +385,32 @@ function displaySimulationResults(simulationResult) {
         document.getElementById('impact-emi-percentage-savings').textContent = '0.00%';
     }
 
-
-    // Update "What If" Prepayment Impact
+    // Update future prepayment plan impact
     const hypotheticalImpactCard = document.getElementById('hypothetical-impact-card');
-    if (hypotheticalPrepaymentImpact) {
+    if (futurePrepaymentPlanImpact || hypotheticalPrepaymentImpact) {
         hypotheticalImpactCard.classList.remove('hidden');
-        document.getElementById('hypothetical-amount').textContent = formatCurrency(hypotheticalPrepaymentImpact.amount);
-        document.getElementById('hypothetical-date').textContent = formatDate(hypotheticalPrepaymentImpact.date);
-        document.getElementById('hypothetical-interest-saved').textContent = formatCurrency(hypotheticalPrepaymentImpact.interestSaved);
-        document.getElementById('hypothetical-months-reduced').textContent = hypotheticalPrepaymentImpact.monthsReduced.toLocaleString('en-IN');
-        document.getElementById('hypothetical-percentage-savings').textContent = `${hypotheticalPrepaymentImpact.percentageSavings.toFixed(2)}%`;
+        const futureAmount = futurePrepaymentPlanImpact ? futurePrepaymentPlanImpact.totalPlannedAmount : hypotheticalPrepaymentImpact.amount;
+        const futureDate = futurePrepaymentPlanImpact ? futurePrepaymentPlanImpact.firstPlannedDate : hypotheticalPrepaymentImpact.date;
+        const additionalInterestSaved = futurePrepaymentPlanImpact
+            ? futurePrepaymentPlanImpact.additionalInterestSaved
+            : hypotheticalPrepaymentImpact.interestSaved;
+        const additionalMonthsReduced = futurePrepaymentPlanImpact
+            ? futurePrepaymentPlanImpact.additionalMonthsReduced
+            : hypotheticalPrepaymentImpact.monthsReduced;
+        const optionalEmi = futurePrepaymentPlanImpact ? futurePrepaymentPlanImpact.reduceEmi?.emi : null;
+        document.getElementById('hypothetical-amount').textContent = formatCurrency(futureAmount || 0);
+        document.getElementById('hypothetical-date').textContent = futureDate ? formatDate(futureDate) : 'N/A';
+        document.getElementById('hypothetical-interest-saved').textContent = formatCurrency(additionalInterestSaved || 0);
+        document.getElementById('hypothetical-months-reduced').textContent = (additionalMonthsReduced || 0).toLocaleString('en-IN');
+        document.getElementById('hypothetical-percentage-savings').textContent = `${(futurePrepaymentPlanImpact
+            ? futurePrepaymentPlanImpact.additionalPercentageSavings
+            : hypotheticalPrepaymentImpact.percentageSavings || 0).toFixed(2)}%`;
+        const optionalEmiLine = document.getElementById('hypothetical-optional-emi');
+        if (optionalEmiLine) {
+            optionalEmiLine.textContent = optionalEmi !== null && optionalEmi !== undefined
+                ? formatCurrency(optionalEmi)
+                : formatCurrency(modifiedLoan.emi);
+        }
     } else {
         hypotheticalImpactCard.classList.add('hidden');
     }
@@ -645,7 +710,7 @@ function formatTenure(totalMonths) {
     return `${years}y ${months}m`;
 }
 
-function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, loanHealth) {
+function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hypotheticalPrepaymentImpact, futurePrepaymentPlanImpact, loanHealth) {
     const primary = document.getElementById('loan-summary-primary');
     const interest = document.getElementById('loan-summary-interest');
     const prepayment = document.getElementById('loan-summary-prepayment');
@@ -655,7 +720,7 @@ function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hyp
     } else if (loanHealth.score < 60) {
         primary.textContent = 'This structure looks expensive. Focus on lowering tenure or adding early prepayments.';
     } else {
-        primary.textContent = 'This loan structure is workable. Use the what-if section to test early lump-sum savings.';
+        primary.textContent = 'This loan structure is workable. Use the future plan section to test early lump-sum savings.';
     }
 
     const interestRatio = originalLoan.totalInterest > 0 && modifiedLoan.totalPayment > 0
@@ -663,8 +728,10 @@ function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hyp
         : 0;
     interest.textContent = `Interest makes up about ${interestRatio.toFixed(1)}% of total cash outflow in the current scenario.`;
 
-    if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
-        prepayment.textContent = `Your what-if prepayment can save another ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} if timed well.`;
+    if (futurePrepaymentPlanImpact && futurePrepaymentPlanImpact.additionalInterestSaved > 0) {
+        prepayment.textContent = `With your future plan, you save another ${formatCurrency(futurePrepaymentPlanImpact.additionalInterestSaved)} and cut ${futurePrepaymentPlanImpact.additionalMonthsReduced} more month(s).`;
+    } else if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
+        prepayment.textContent = `Your future prepayment plan can save another ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} if timed well.`;
     } else if (prepaymentImpact?.alternativeReduceEmiImpact?.newEmi && prepaymentImpact.alternativeReduceEmiImpact.newEmi < modifiedLoan.emi) {
         prepayment.textContent = `If you prefer keeping tenure closer to the original plan, the alternative EMI can step down to about ${formatCurrency(prepaymentImpact.alternativeReduceEmiImpact.newEmi)} instead of shortening tenure.`;
     } else {

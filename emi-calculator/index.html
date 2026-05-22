@@ -165,25 +165,25 @@
 
                             <hr class="my-4">
 
-                            <h3>Prepayments (Optional)</h3>
-                            <div id="prepayments-list" class="prepayment-items-list">
-                                <!-- Prepayment items will be added here -->
+                            <h3>Prepayment Planner</h3>
+                            <div class="prepayment-planner-grid">
+                                <div class="prepayment-planner-group">
+                                    <h4>Actual Prepayments</h4>
+                                    <div id="prepayments-list" class="prepayment-items-list">
+                                        <!-- Actual prepayment items will be added here -->
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-block mt-2" id="add-prepayment">Add Actual Prepayment</button>
+                                    <small class="block mt-2">Already made or confirmed. These affect the real loan calculation.</small>
+                                </div>
+                                <div class="prepayment-planner-group">
+                                    <h4>Future Prepayment Plan</h4>
+                                    <div id="future-prepayments-list" class="prepayment-items-list">
+                                        <!-- Future prepayment items will be added here -->
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-block mt-2" id="add-future-prepayment">Add Future Plan</button>
+                                    <small class="block mt-2">Hypothetical prepayments used only for simulation.</small>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-secondary btn-block mt-2" id="add-prepayment">Add Prepayment</button>
-                            <small class="block mt-2">Add any extra payments you have made or plan to make.</small>
-
-                            <hr class="my-4">
-
-                            <h3>"What If" Prepayment Scenario (Optional)</h3>
-                            <div class="form-group">
-                                <label for="hypothetical-prepayment-amount">Amount (₹)</label>
-                                <input type="number" id="hypothetical-prepayment-amount" min="0" step="0.01" placeholder="e.g., 1,00,000">
-                            </div>
-                            <div class="form-group">
-                                <label for="hypothetical-prepayment-date">Date</label>
-                                <input type="date" id="hypothetical-prepayment-date">
-                            </div>
-                            <small class="block mt-2">Simulate the impact of a single future prepayment.</small>
 
 
                             <button type="submit" class="btn btn-primary btn-block mt-4">
@@ -268,7 +268,7 @@
                             </div>
                         </div>
                         <div class="comparison-panel">
-                            <h4>After Prepayments</h4>
+                            <h4>After Actual Prepayments</h4>
                             <div class="comparison-item">
                                 <span>EMI</span>
                                 <span id="compare-modified-emi" class="value">₹0</span>
@@ -284,6 +284,25 @@
                             <div class="comparison-item">
                                 <span>Tenure</span>
                                 <span id="compare-modified-tenure" class="value">0m</span>
+                            </div>
+                        </div>
+                        <div class="comparison-panel">
+                            <h4>With Future Plan</h4>
+                            <div class="comparison-item">
+                                <span>EMI</span>
+                                <span id="compare-future-emi" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Interest</span>
+                                <span id="compare-future-interest" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Payment</span>
+                                <span id="compare-future-payment" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Tenure</span>
+                                <span id="compare-future-tenure" class="value">0m</span>
                             </div>
                         </div>
                     </div>
@@ -302,7 +321,7 @@
                         </div>
                         <div class="summary-banner">
                             <small>Prepayment Signal</small>
-                            <p id="loan-summary-prepayment">Optional prepayments and what-if scenarios will be summarized here.</p>
+                            <p id="loan-summary-prepayment">Optional prepayments and future plans will be summarized here.</p>
                         </div>
                     </div>
                 </div>
@@ -363,13 +382,14 @@
                     </div>
                 </div>
 
-                <!-- What If Prepayment Impact -->
+                <!-- Future Prepayment Plan Impact -->
                 <div class="card mt-3 hidden" id="hypothetical-impact-card">
-                    <h3>"What If" Prepayment Impact</h3>
-                    <p>A prepayment of <span id="hypothetical-amount">₹0</span> on <span id="hypothetical-date"></span> could lead to:</p>
+                    <h3>Future Prepayment Plan Impact</h3>
+                    <p>With a future plan of <span id="hypothetical-amount">₹0</span> on <span id="hypothetical-date"></span>, you could get:</p>
                     <ul>
                         <li>Additional Interest Saved: <span id="hypothetical-interest-saved">₹0</span></li>
                         <li>Additional Months Reduced: <span id="hypothetical-months-reduced">0</span></li>
+                        <li>Optional Reduced EMI: <span id="hypothetical-optional-emi">₹0</span></li>
                         <li>Percentage Savings: <span id="hypothetical-percentage-savings">0%</span></li>
                     </ul>
                 </div>
