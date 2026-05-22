@@ -239,7 +239,7 @@
                     <div class="metric-card">
                         <div class="metric-icon">📅</div>
                         <div class="metric-content">
-                            <small>Final Tenure</small>
+                            <small>Projected Final Tenure</small>
                             <h3 id="loan-tenure-display">0 months</h3>
                         </div>
                     </div>
@@ -360,6 +360,61 @@
                             <p>Interest Saved: <span id="impact-emi-interest-saved">₹0</span></p>
                             <p>Percentage Savings: <span id="impact-emi-percentage-savings">0%</span></p>
                         </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3 hidden" id="smart-prepayment-advisor-card">
+                    <div class="scenario-comparison-header">
+                        <div>
+                            <h3>Smart Prepayment Insights</h3>
+                            <p class="helper-text">A financial-advisor style view of your latest prepayment idea.</p>
+                        </div>
+                        <p class="scenario-highlight" id="advisor-highlight">Enter a prepayment amount to see savings.</p>
+                    </div>
+                    <div class="summary-banner-grid">
+                        <div class="summary-banner">
+                            <small>Interest Saved</small>
+                            <p id="advisor-interest-saved">₹0</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>Tenure Reduced</small>
+                            <p id="advisor-tenure-saved">0m</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>EMI Reduction</small>
+                            <p id="advisor-emi-reduction">₹0</p>
+                        </div>
+                    </div>
+                    <div class="advisor-meta-grid mt-3">
+                        <div class="advisor-callout">
+                            <small>Recommendation</small>
+                            <p id="advisor-recommendation">Reduce tenure to maximize savings.</p>
+                        </div>
+                        <div class="advisor-callout">
+                            <small>Timing Insight</small>
+                            <p id="advisor-timing">Earlier prepayments usually create the highest interest savings.</p>
+                        </div>
+                    </div>
+                    <p class="helper-text mt-2" id="advisor-helper-text">Earlier prepayments save more interest.</p>
+                    <div class="table-container mt-3">
+                        <table class="monthly-table advisor-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>EMI</th>
+                                    <th>Interest</th>
+                                    <th>Tenure</th>
+                                </tr>
+                            </thead>
+                            <tbody id="advisor-comparison-body">
+                                <tr>
+                                    <td>Current</td>
+                                    <td>₹0</td>
+                                    <td>₹0</td>
+                                    <td>0m</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

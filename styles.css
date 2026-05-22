@@ -1082,6 +1082,53 @@ article li {
     font-weight: 600;
 }
 
+.advisor-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.advisor-callout {
+    padding: 1rem 1.1rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #fff7e8 0%, #fffdf6 100%);
+    border: 1px solid #f2d7aa;
+}
+
+.advisor-callout small {
+    display: block;
+    color: #8a6a2f;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.72rem;
+}
+
+.advisor-callout p {
+    color: #4c3d22;
+    font-weight: 600;
+}
+
+.advisor-table tbody tr:nth-child(2),
+.advisor-table tbody tr:nth-child(3) {
+    background: #fafcff;
+}
+
+.count-up {
+    animation: advisorGlow 0.6s ease;
+}
+
+@keyframes advisorGlow {
+    0% {
+        transform: translateY(4px);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;

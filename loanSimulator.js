@@ -127,6 +127,7 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
         insights: insights,
 
         updatedSchedule: modifiedSchedule, // The schedule after actual prepayments
+        originalSchedule: originalSchedule,
         breakEvenMonth: breakEvenMonth,
 
         // For comparison mode

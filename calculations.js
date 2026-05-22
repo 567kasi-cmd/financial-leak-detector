@@ -429,6 +429,148 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
     };
 }
 
+export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment, baseSchedule, monthlyIncome = null) {
+    if (!hypotheticalPrepayment || hypotheticalPrepayment.amount <= 0 || !baseSchedule || baseSchedule.length === 0) {
+        return null;
+    }
+
+    const monthlyRate = baseLoan.annualInterestRate / 12;
+    const normalizedAmount = normalizeRupees(hypotheticalPrepayment.amount);
+    const hypotheticalDate = new Date(hypotheticalPrepayment.date);
+    const remainingEntry = baseSchedule.find((entry) => new Date(entry.date) >= hypotheticalDate);
+
+    if (!remainingEntry) {
+        return {
+            isValid: false,
+            error: 'This prepayment date falls after the loan would already be closed.'
+        };
+    }
+
+    const previousEntry = baseSchedule[remainingEntry.month - 2] || null;
+    const currentMonth = remainingEntry.month - 1;
+    const remainingMonths = Math.max(1, baseLoan.totalMonths - currentMonth);
+    const interestPaidBefore = previousEntry ? previousEntry.cumulativeInterestPaid : 0;
+    const remainingPrincipal = roundCurrency(previousEntry ? previousEntry.closingBalance : remainingEntry.openingBalance);
+
+    if (normalizedAmount <= 0) {
+        return {
+            isValid: false,
+            error: 'Prepayment amount must be greater than 0.'
+        };
+    }
+
+    if (normalizedAmount > remainingPrincipal) {
+        return {
+            isValid: false,
+            error: `Prepayment cannot exceed the remaining principal of ${formatAdvisorCurrency(remainingPrincipal)} on ${hypotheticalDate.toISOString().split('T')[0]}.`
+        };
+    }
+
+    const newPrincipal = roundCurrency(Math.max(0, remainingPrincipal - normalizedAmount));
+    const currentEmi = roundCurrency(baseLoan.emi);
+    const baselineInterest = roundCurrency(baseLoan.totalInterest);
+    const baselineMonths = baseLoan.totalMonths;
+
+    const newTenureMonths = recalculateTenure(newPrincipal, monthlyRate, currentEmi);
+    const reduceTenureSchedule = generateAmortizationSchedule(
+        newPrincipal,
+        monthlyRate,
+        currentEmi,
+        Math.max(1, newTenureMonths),
+        hypotheticalDate
+    );
+    const reduceTenureFutureInterest = reduceTenureSchedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
+    const reduceTenureTotalInterest = roundCurrency(interestPaidBefore + reduceTenureFutureInterest);
+    const reduceTenureTotalMonths = currentMonth + reduceTenureSchedule.length;
+    const reduceTenureInterestSaved = roundCurrency(baselineInterest - reduceTenureTotalInterest);
+    const reduceTenureMonthsSaved = Math.max(0, baselineMonths - reduceTenureTotalMonths);
+
+    let reduceEmi = calculateEMI(newPrincipal, monthlyRate, remainingMonths);
+    let emiReductionCapped = false;
+    if (currentEmi > 0 && reduceEmi < currentEmi * 0.8) {
+        reduceEmi = roundCurrency(currentEmi * 0.8);
+        emiReductionCapped = true;
+    }
+
+    const reduceEmiSchedule = generateAmortizationSchedule(
+        newPrincipal,
+        monthlyRate,
+        reduceEmi,
+        remainingMonths,
+        hypotheticalDate
+    );
+    const reduceEmiFutureInterest = reduceEmiSchedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
+    const reduceEmiTotalInterest = roundCurrency(interestPaidBefore + reduceEmiFutureInterest);
+    const reduceEmiTotalMonths = currentMonth + reduceEmiSchedule.length;
+    const reduceEmiInterestSaved = roundCurrency(baselineInterest - reduceEmiTotalInterest);
+    const emiReduction = roundCurrency(currentEmi - reduceEmi);
+
+    const emiToIncomeRatio = monthlyIncome && monthlyIncome > 0 ? currentEmi / monthlyIncome : null;
+    const recommendReduceEmi = emiToIncomeRatio !== null && emiToIncomeRatio > 0.35;
+    const recommendation = recommendReduceEmi
+        ? 'Reduce EMI'
+        : 'Reduce Tenure';
+    const recommendationMessage = recommendReduceEmi
+        ? 'Recommendation: Reduce EMI to ease monthly cash flow.'
+        : 'Recommendation: Reduce tenure to maximize savings.';
+
+    let timingLabel = 'Lower impact - most interest is already paid.';
+    if (currentMonth < baselineMonths * 0.3) {
+        timingLabel = 'Best time to prepay - maximum savings.';
+    } else if (currentMonth < baselineMonths * 0.7) {
+        timingLabel = 'Moderate benefit.';
+    }
+
+    return {
+        isValid: true,
+        sourceDate: hypotheticalDate,
+        sourceAmount: normalizedAmount,
+        currentState: {
+            remainingPrincipal,
+            currentEmi,
+            remainingMonths,
+            monthlyInterestRate: monthlyRate,
+            currentMonth,
+            totalMonths: baselineMonths
+        },
+        scenarios: {
+            current: {
+                emi: currentEmi,
+                totalInterest: baselineInterest,
+                totalMonths: baselineMonths
+            },
+            reduceTenure: {
+                emi: currentEmi,
+                totalInterest: reduceTenureTotalInterest,
+                totalMonths: reduceTenureTotalMonths,
+                interestSaved: reduceTenureInterestSaved,
+                monthsSaved: reduceTenureMonthsSaved,
+                emiReduction: 0
+            },
+            reduceEmi: {
+                emi: roundCurrency(reduceEmi),
+                totalInterest: reduceEmiTotalInterest,
+                totalMonths: reduceEmiTotalMonths,
+                interestSaved: reduceEmiInterestSaved,
+                monthsSaved: Math.max(0, baselineMonths - reduceEmiTotalMonths),
+                emiReduction,
+                emiReductionCapped
+            }
+        },
+        recommendation,
+        recommendationMessage,
+        timingInsight: timingLabel,
+        helperText: 'Earlier prepayments save more interest.'
+    };
+}
+
+function formatAdvisorCurrency(amount) {
+    return `₹${Number(amount || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    })}`;
+}
+
 
 /**
  * Calculates a loan health score based on various factors.
