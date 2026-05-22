@@ -390,8 +390,23 @@ export function recalculateLoanAfterPrepayment(
     scenarioReduceTenure: { newTenureMonths: 0, monthsReduced: 0, interestSaved: 0, percentageSavings: 0 },
   };
 
+  // If no actual interest was saved, then there's no impact from prepayments.
+  // This also handles the case where totalInterestPaidAfterPrepayments might be incorrectly 0
+  // while totalInterestPaidOriginal is not (indicating no real prepayment effect).
+  if (Math.abs(totalInterestPaidOriginal - totalInterestPaidAfterPrepayments) < 0.01 ||
+      (totalInterestPaidOriginal > 0.01 && totalInterestPaidAfterPrepayments < 0.01)) {
+      impact.scenarioReduceTenure.newTenureMonths = originalTenureMonths;
+      impact.scenarioReduceTenure.monthsReduced = 0;
+      impact.scenarioReduceTenure.interestSaved = 0;
+      impact.scenarioReduceTenure.percentageSavings = 0;
+
+      impact.scenarioReduceEmi.newEmi = originalEmi;
+      impact.scenarioReduceEmi.interestSaved = 0;
+      impact.scenarioReduceEmi.percentageSavings = 0;
+      return impact;
+  }
+
   // Scenario B: Reduce tenure (EMI same as original)
-  // This is already the outcome of `applyPrepayments`
   impact.scenarioReduceTenure.newTenureMonths = currentRemainingTenureMonths;
   impact.scenarioReduceTenure.monthsReduced = originalTenureMonths - currentRemainingTenureMonths;
   impact.scenarioReduceTenure.interestSaved = parseFloat((totalInterestPaidOriginal - totalInterestPaidAfterPrepayments).toFixed(2));
@@ -400,7 +415,6 @@ export function recalculateLoanAfterPrepayment(
 
 
   // Scenario A: Reduce EMI (tenure same as original)
-  // Calculate new EMI based on current remaining balance and original remaining tenure
   const monthlyInterestRate = annualInterestRate / 12;
   if (currentRemainingBalance > 0 && originalTenureMonths > 0) {
     const newEmiIfTenureSame = calculateEMI(currentRemainingBalance, annualInterestRate, originalTenureMonths);
@@ -425,10 +439,13 @@ export function recalculateLoanAfterPrepayment(
       parseFloat(((impact.scenarioReduceEmi.interestSaved / totalInterestPaidOriginal) * 100).toFixed(2)) : 0;
 
   } else {
-    // Loan already paid off or no remaining tenure
+    // If currentRemainingBalance is 0, it means the loan was paid off.
+    // If this path is reached, it means totalInterestPaidOriginal was significantly different from totalInterestPaidAfterPrepayments,
+    // so some interest was saved (e.g., totalInterestPaidAfterPrepayments was 0).
     impact.scenarioReduceEmi.newEmi = 0;
-    impact.scenarioReduceEmi.interestSaved = parseFloat(totalInterestPaidOriginal.toFixed(2)); // All interest saved if loan is paid off
-    impact.scenarioReduceEmi.percentageSavings = totalInterestPaidOriginal > 0 ? 100 : 0;
+    impact.scenarioReduceEmi.interestSaved = parseFloat((totalInterestPaidOriginal - totalInterestPaidAfterPrepayments).toFixed(2));
+    impact.scenarioReduceEmi.percentageSavings = totalInterestPaidOriginal > 0 ?
+      parseFloat(((impact.scenarioReduceEmi.interestSaved / totalInterestPaidOriginal) * 100).toFixed(2)) : 0;
   }
 
   return impact;
