@@ -1,96 +1,183 @@
-// emi-script.js - EMI Calculator Page Logic
+// emi-script.js - Advanced Loan Simulator Page Logic
+
+import { simulateLoan, calculateEMI } from '../loanSimulator.js'; // Import the main simulation function and calculateEMI
 
 // Form elements
 const emiForm = document.getElementById('emi-form');
+const addPrepaymentBtn = document.getElementById('add-prepayment');
+const prepaymentsList = document.getElementById('prepayments-list');
 
-// Event listener
+// Chart instances
+let emiPieChartInstance;
+let principalInterestChartInstance;
+let balanceOverTimeChartInstance;
+
+// Event listeners
 emiForm.addEventListener('submit', handleEmiFormSubmit);
+addPrepaymentBtn.addEventListener('click', addPrepaymentField);
+
+// Helper for currency formatting
+const formatCurrency = (amount) => {
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+};
+
+// Helper for date formatting
+const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-IN', options);
+};
 
 /**
  * Handle EMI form submission
  * @param {event} e - Form submit event
  */
-function handleEmiFormSubmit(e) {
+async function handleEmiFormSubmit(e) {
     e.preventDefault();
 
     // Get input values
     const loanAmount = parseFloat(document.getElementById('loan-amount').value);
-    const interestRate = parseFloat(document.getElementById('interest-rate').value);
+    const annualInterestRate = parseFloat(document.getElementById('interest-rate').value) / 100; // Convert to decimal
     const years = parseInt(document.getElementById('loan-tenure-years').value) || 0;
     const months = parseInt(document.getElementById('loan-tenure-months').value) || 0;
-    const totalMonths = (years * 12) + months;
+    const loanTenureMonths = (years * 12) + months;
+    const loanStartDateStr = document.getElementById('loan-start-date').value;
+    const loanStartDate = new Date(loanStartDateStr);
     const monthlyIncome = parseFloat(document.getElementById('monthly-income').value) || null;
 
     // Validate inputs
-    if (!validateEmiInputs(loanAmount, interestRate, totalMonths)) {
-        showError('Please enter valid values (loan amount > 0, rate >= 0, tenure > 0)');
+    if (!validateLoanInputs(loanAmount, annualInterestRate, loanTenureMonths, loanStartDate)) {
+        showError('Please enter valid loan details (amount > 0, rate >= 0, tenure > 0, valid start date).');
         return;
+    }
+
+    // Collect prepayments
+    const prepayments = [];
+    document.querySelectorAll('.prepayment-item').forEach(item => {
+        const amount = parseFloat(item.querySelector('.prepayment-amount').value);
+        const dateStr = item.querySelector('.prepayment-date').value;
+        if (!isNaN(amount) && amount > 0 && dateStr) {
+            prepayments.push({ amount: amount, date: new Date(dateStr) });
+        }
+    });
+
+    // Collect hypothetical prepayment
+    let hypotheticalPrepayment = undefined;
+    const hypotheticalAmount = parseFloat(document.getElementById('hypothetical-prepayment-amount').value);
+    const hypotheticalDateStr = document.getElementById('hypothetical-prepayment-date').value;
+    if (!isNaN(hypotheticalAmount) && hypotheticalAmount > 0 && hypotheticalDateStr) {
+        hypotheticalPrepayment = { amount: hypotheticalAmount, date: new Date(hypotheticalDateStr) };
     }
 
     // Show loading
     showEmiLoading();
 
-    // Simulate calculation (setTimeout for smooth UX)
-    setTimeout(() => {
-        try {
-            // Perform calculations
-            const results = calculateEMI(loanAmount, interestRate, totalMonths);
+    // Simulate calculation
+    try {
+        const simulationResult = simulateLoan(
+            {
+                loanAmount,
+                annualInterestRate,
+                loanTenureMonths,
+                loanStartDate,
+            },
+            prepayments,
+            new Date(), // Current date for loan progress
+            hypotheticalPrepayment
+        );
 
-            // Display results
-            displayEmiResults(results, loanAmount, interestRate, totalMonths, monthlyIncome);
+        // Display results
+        displaySimulationResults(simulationResult, loanAmount, annualInterestRate, loanTenureMonths, monthlyIncome);
 
-            // Scroll to results
-            document.getElementById('emi-results').scrollIntoView({ behavior: 'smooth' });
+        // Scroll to results
+        document.getElementById('emi-results').scrollIntoView({ behavior: 'smooth' });
 
-            hideEmiLoading();
-        } catch (error) {
-            showError('Calculation error: ' + error.message);
-            hideEmiLoading();
-        }
-    }, 300);
+        hideEmiLoading();
+    } catch (error) {
+        console.error("Simulation error:", error);
+        showError('Calculation error: ' + error.message);
+        hideEmiLoading();
+    }
 }
 
 /**
- * Display EMI calculation results
- * @param {object} results - EMI calculation results
- * @param {number} loanAmount - Principal amount
- * @param {number} interestRate - Annual interest rate
- * @param {number} totalMonths - Total tenure in months
+ * Dynamically add a prepayment input field
+ */
+function addPrepaymentField() {
+    const prepaymentItem = document.createElement('div');
+    prepaymentItem.classList.add('prepayment-item', 'form-group', 'grid-2-col');
+    prepaymentItem.innerHTML = `
+        <input type="number" class="prepayment-amount" min="0" step="0.01" placeholder="Amount (₹)" required>
+        <input type="date" class="prepayment-date" required>
+        <button type="button" class="btn btn-danger btn-small remove-prepayment">X</button>
+    `;
+    prepaymentsList.appendChild(prepaymentItem);
+
+    prepaymentItem.querySelector('.remove-prepayment').addEventListener('click', () => {
+        prepaymentItem.remove();
+    });
+}
+
+/**
+ * Display comprehensive loan simulation results
+ * @param {object} result - The LoanSimulationResult object
+ * @param {number} originalLoanAmount - The original loan amount input by user
+ * @param {number} originalAnnualRate - The original annual interest rate input by user (decimal)
+ * @param {number} originalTenureMonths - The original loan tenure in months input by user
  * @param {number|null} monthlyIncome - Monthly income (optional)
  */
-function displayEmiResults(results, loanAmount, interestRate, totalMonths, monthlyIncome = null) {
-    // Update metric cards
-    document.getElementById('emi-amount').textContent = `₹${results.emi.toLocaleString('en-IN')}`;
-    document.getElementById('total-amount').textContent = `₹${results.totalPayment.toLocaleString('en-IN')}`;
-    document.getElementById('total-interest').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
-    document.getElementById('loan-tenure-display').textContent = `${Math.floor(totalMonths / 12)}y ${totalMonths % 12}m`;
+function displaySimulationResults(result, originalLoanAmount, originalAnnualRate, originalTenureMonths, monthlyIncome) {
+    // Update Key Metrics
+    document.getElementById('emi-amount').textContent = formatCurrency(result.emi);
+    document.getElementById('total-interest').textContent = formatCurrency(result.totalInterest);
+    document.getElementById('total-payment').textContent = formatCurrency(result.totalPayment);
+    document.getElementById('loan-tenure-display').textContent = `${Math.floor(result.prepaymentImpact.newTenure / 12)}y ${result.prepaymentImpact.newTenure % 12}m`;
 
-    // Update breakdown
-    document.getElementById('emi-principal').textContent = `₹${loanAmount.toLocaleString('en-IN')}`;
-    document.getElementById('emi-interest').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
+    // Update Loan Progress
+    document.getElementById('progress-emis-paid').textContent = result.loanProgress.paidEmis.toString();
+    document.getElementById('progress-principal-paid').textContent = formatCurrency(result.loanProgress.principalPaid);
+    document.getElementById('progress-interest-paid').textContent = formatCurrency(result.loanProgress.interestPaid);
+    document.getElementById('progress-remaining-balance').textContent = formatCurrency(result.loanProgress.remainingBalance);
+    document.getElementById('progress-months-remaining').textContent = result.loanProgress.monthsRemaining.toString();
 
-    const interestPercent = ((results.totalInterest / loanAmount) * 100).toFixed(0);
-    document.getElementById('emi-percentage').textContent = `${interestPercent}%`;
+    // Update Prepayment Impact (Actual Prepayments - Reduce Tenure Scenario)
+    document.getElementById('impact-tenure-interest-saved').textContent = formatCurrency(result.prepaymentImpact.interestSaved);
+    document.getElementById('impact-tenure-months-reduced').textContent = result.prepaymentImpact.monthsReduced.toString();
+    document.getElementById('impact-tenure-percentage-savings').textContent = `${result.prepaymentImpact.percentageSavings}%`;
 
-    // Processing fee estimate (1% of loan)
-    const processingFee = Math.round(loanAmount * 0.01);
-    document.getElementById('processing-fee').textContent = `₹${processingFee.toLocaleString('en-IN')}`;
+    // Update Prepayment Impact (Actual Prepayments - Reduce EMI Scenario)
+    document.getElementById('impact-emi-new-emi').textContent = formatCurrency(result.alternativeReduceEmiImpact.newEmi);
+    document.getElementById('impact-emi-interest-saved').textContent = formatCurrency(result.alternativeReduceEmiImpact.interestSaved);
+    document.getElementById('impact-emi-percentage-savings').textContent = `${result.alternativeReduceEmiImpact.percentageSavings}%`;
 
-    // EMI comparisons
-    updateEmiComparisons(results.emi, loanAmount, interestRate, totalMonths);
 
-    // Update chart
-    updateEmiChart(loanAmount, results.totalInterest);
+    // Update "What If" Prepayment Impact
+    const hypotheticalCard = document.getElementById('hypothetical-impact-card');
+    if (result.hypotheticalPrepaymentImpact) {
+        hypotheticalCard.classList.remove('hidden');
+        document.getElementById('hypothetical-amount').textContent = formatCurrency(result.hypotheticalPrepaymentImpact.amount);
+        document.getElementById('hypothetical-date').textContent = formatDate(result.hypotheticalPrepaymentImpact.date);
+        document.getElementById('hypothetical-interest-saved').textContent = formatCurrency(result.hypotheticalPrepaymentImpact.interestSaved);
+        document.getElementById('hypothetical-months-reduced').textContent = result.hypotheticalPrepaymentImpact.monthsReduced.toString();
+        document.getElementById('hypothetical-percentage-savings').textContent = `${result.hypotheticalPrepaymentImpact.percentageSavings}%`;
+    } else {
+        hypotheticalCard.classList.add('hidden');
+    }
 
-    // Populate amortization table
-    populateEmiTable(results.monthlyData);
+    // Update Loan Health Score
+    document.getElementById('loan-health-score').textContent = result.loanHealth.score.toString();
+    document.getElementById('loan-health-rating').textContent = result.loanHealth.rating;
+    document.getElementById('loan-health-message').textContent = result.loanHealth.message;
 
-    // Display insights
-    const insights = generateEmiInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome);
-    displayEmiInsights(insights);
+    // Update Charts
+    updateEmiPieChart(originalLoanAmount, result.totalInterest); // Use original principal for pie chart
+    updatePrincipalInterestChart(result.chartData.principalVsInterest);
+    updateBalanceOverTimeChart(result.chartData.balanceOverTime);
 
-    // Display prepayment scenarios
-    displayEmiPrepaymentScenarios(results, loanAmount, interestRate, totalMonths);
+    // Populate Amortization Table
+    populateAmortizationTable(result.updatedSchedule);
+
+    // Display Smart Insights
+    displaySmartInsights(result.insights, result.breakEvenMonth);
 
     // Show results section
     document.getElementById('emi-results').classList.remove('hidden');
@@ -98,45 +185,19 @@ function displayEmiResults(results, loanAmount, interestRate, totalMonths, month
 }
 
 /**
- * Update EMI comparison scenarios
- * @param {number} currentEmi - Current EMI amount
- * @param {number} loanAmount - Principal amount
- * @param {number} interestRate - Annual rate
- * @param {number} totalMonths - Total months
- */
-function updateEmiComparisons(currentEmi, loanAmount, interestRate, totalMonths) {
-    // Current EMI
-    document.getElementById('current-emi').textContent = `₹${currentEmi.toLocaleString('en-IN')}`;
-
-    // Lower rate (-1%)
-    const lowerRateResult = calculateEMI(loanAmount, interestRate - 1, totalMonths);
-    document.getElementById('lower-rate-emi').textContent = `₹${lowerRateResult.emi.toLocaleString('en-IN')}`;
-
-    // Higher rate (+1%)
-    const higherRateResult = calculateEMI(loanAmount, interestRate + 1, totalMonths);
-    document.getElementById('higher-rate-emi').textContent = `₹${higherRateResult.emi.toLocaleString('en-IN')}`;
-
-    // Shorter tenure (-1 year)
-    const shorterMonths = Math.max(totalMonths - 12, 1);
-    const shorterResult = calculateEMI(loanAmount, interestRate, shorterMonths);
-    document.getElementById('shorter-tenure-emi').textContent = `₹${shorterResult.emi.toLocaleString('en-IN')}`;
-}
-
-/**
- * Update EMI pie chart
+ * Update EMI pie chart (Principal vs Total Interest)
  * @param {number} principal - Principal amount
  * @param {number} totalInterest - Total interest
  */
-function updateEmiChart(principal, totalInterest) {
+function updateEmiPieChart(principal, totalInterest) {
     const ctx = document.getElementById('emi-pie-chart');
     if (!ctx) return;
 
-    // Destroy existing chart if it exists
-    if (window.emiPieChart) {
-        window.emiPieChart.destroy();
+    if (emiPieChartInstance) {
+        emiPieChartInstance.destroy();
     }
 
-    window.emiPieChart = new Chart(ctx, {
+    emiPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Principal', 'Interest'],
@@ -159,43 +220,171 @@ function updateEmiChart(principal, totalInterest) {
 }
 
 /**
- * Populate EMI amortization table
- * @param {array} monthlyData - Monthly breakdown data
+ * Update Principal vs Interest Timeline Chart
+ * @param {array} data - Array of { month, principal, interest }
  */
-function populateEmiTable(monthlyData) {
+function updatePrincipalInterestChart(data) {
+    const ctx = document.getElementById('principal-interest-chart');
+    if (!ctx) return;
+
+    if (principalInterestChartInstance) {
+        principalInterestChartInstance.destroy();
+    }
+
+    principalInterestChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(entry => entry.month),
+            datasets: [
+                {
+                    label: 'Cumulative Principal Paid',
+                    data: data.map(entry => entry.principal),
+                    borderColor: '#28a745', // Green
+                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Cumulative Interest Paid',
+                    data: data.map(entry => entry.interest),
+                    borderColor: '#dc3545', // Red
+                    backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Amount (₹)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Update Balance Over Time Chart
+ * @param {array} data - Array of { month, balance }
+ */
+function updateBalanceOverTimeChart(data) {
+    const ctx = document.getElementById('balance-over-time-chart');
+    if (!ctx) return;
+
+    if (balanceOverTimeChartInstance) {
+        balanceOverTimeChartInstance.destroy();
+    }
+
+    balanceOverTimeChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(entry => entry.month),
+            datasets: [
+                {
+                    label: 'Remaining Balance',
+                    data: data.map(entry => entry.balance),
+                    borderColor: '#007bff', // Blue
+                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Amount (₹)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Populate Amortization Table
+ * @param {array} schedule - Array of ScheduleEntry objects
+ */
+function populateAmortizationTable(schedule) {
     const tbody = document.getElementById('emi-table-body');
     tbody.innerHTML = '';
 
     const fragment = document.createDocumentFragment();
 
-    monthlyData.forEach(data => {
+    schedule.forEach(entry => {
         const row = document.createElement('tr');
 
-        const monthCell = document.createElement('td');
-        monthCell.textContent = data.month;
-
-        const emiCell = document.createElement('td');
-        emiCell.className = 'currency';
-        emiCell.textContent = `₹${Number(data.payment).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        const principalCell = document.createElement('td');
-        principalCell.className = 'currency principal';
-        principalCell.textContent = `₹${Number(data.principal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        const interestCell = document.createElement('td');
-        interestCell.className = 'currency interest';
-        interestCell.textContent = `₹${Number(data.interest).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        const balanceCell = document.createElement('td');
-        balanceCell.className = 'currency balance';
-        balanceCell.textContent = `₹${Number(data.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        row.appendChild(monthCell);
-        row.appendChild(emiCell);
-        row.appendChild(principalCell);
-        row.appendChild(interestCell);
-        row.appendChild(balanceCell);
-
+        row.innerHTML = `
+            <td>${entry.month}</td>
+            <td>${formatDate(entry.date)}</td>
+            <td class="currency">${formatCurrency(entry.openingBalance)}</td>
+            <td class="currency">${formatCurrency(entry.emi)}</td>
+            <td class="currency principal">${formatCurrency(entry.principalComponent)}</td>
+            <td class="currency interest">${formatCurrency(entry.interestComponent)}</td>
+            <td class="currency balance">${formatCurrency(entry.closingBalance)}</td>
+            <td class="currency">${formatCurrency(entry.cumulativePrincipalPaid)}</td>
+            <td class="currency">${formatCurrency(entry.cumulativeInterestPaid)}</td>
+        `;
         fragment.appendChild(row);
     });
 
@@ -203,156 +392,27 @@ function populateEmiTable(monthlyData) {
 }
 
 /**
- * Generate EMI-specific insights
- * @param {object} results - EMI results
- * @param {number} loanAmount - Principal
- * @param {number} interestRate - Annual rate
- * @param {number} totalMonths - Total months
- * @param {number|null} monthlyIncome - Monthly income (optional)
- * @returns {array} Insights array
+ * Display Smart Insights
+ * @param {array} insights - Array of insight strings
+ * @param {number|undefined} breakEvenMonth - Break-even month
  */
-function generateEmiInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
-    const insights = [];
-    const years = totalMonths / 12;
-
-    // High interest burden
-    if (results.totalInterest > loanAmount * 0.5) {
-        insights.push({
-            type: 'danger',
-            icon: '🚨',
-            title: 'High Interest Burden',
-            message: `You'll pay ₹${results.totalInterest.toLocaleString('en-IN')} in interest - ${((results.totalInterest / loanAmount) * 100).toFixed(0)}% of your loan amount!`,
-            action: 'Consider negotiating a lower interest rate or prepaying when possible.'
-        });
-    }
-
-    // Long tenure
-    if (years > 20) {
-        insights.push({
-            type: 'warning',
-            icon: '⏳',
-            title: 'Very Long Tenure',
-            message: `${years.toFixed(0)} years is a very long time to repay this loan.`,
-            action: 'Consider increasing EMI to reduce tenure, or explore balance transfer options.'
-        });
-    }
-
-    // EMI affordability - only show if monthly income is provided
-    if (monthlyIncome && monthlyIncome > 0) {
-        const emiRatio = (results.emi / monthlyIncome) * 100;
-        if (emiRatio > 50) {
-            insights.push({
-                type: 'danger',
-                icon: '🚨',
-                title: 'High Financial Risk',
-                message: `EMI is ${emiRatio.toFixed(0)}% of your monthly income - this poses a high financial risk.`,
-                action: 'Consider a longer tenure, lower loan amount, or explore ways to increase your income.'
-            });
-        } else if (emiRatio > 30) {
-            insights.push({
-                type: 'warning',
-                icon: '⚠️',
-                title: 'Moderate Burden',
-                message: `EMI takes ${emiRatio.toFixed(0)}% of your monthly income.`,
-                action: 'Ensure you have sufficient buffer for other expenses and emergencies.'
-            });
-        } else {
-            insights.push({
-                type: 'success',
-                icon: '✅',
-                title: 'Healthy EMI Level',
-                message: `EMI is ${emiRatio.toFixed(0)}% of your monthly income - this is within healthy limits.`,
-                action: 'Great! You have good financial breathing room for other expenses.'
-            });
-        }
-    } else {
-        // Generic advisory when income is not provided
-        insights.push({
-            type: 'info',
-            icon: '💡',
-            title: 'EMI Affordability Check',
-            message: 'Ideally, EMI should be less than 30-40% of your monthly income.',
-            action: 'Enter your monthly income above to get personalized affordability insights.'
-        });
-    }
-
-    // Interest rate comparison
-    if (interestRate > 12) {
-        insights.push({
-            type: 'warning',
-            icon: '📈',
-            title: 'High Interest Rate',
-            message: `${interestRate}% is above average for most loan types.`,
-            action: 'Shop around for better rates or improve your credit score.'
-        });
-    }
-
-    // Positive insights
-    if (results.totalInterest < loanAmount * 0.3) {
-        insights.push({
-            type: 'success',
-            icon: '✅',
-            title: 'Reasonable Loan Terms',
-            message: 'Your loan terms are reasonable with manageable interest burden.',
-            action: 'Focus on regular payments and consider prepayments when possible.'
-        });
-    }
-
-    return insights;
-}
-
-/**
- * Display EMI insights
- * @param {array} insights - Array of insight objects
- */
-function displayEmiInsights(insights) {
+function displaySmartInsights(insights, breakEvenMonth) {
     const list = document.getElementById('emi-insight-list');
     list.innerHTML = '';
 
-    insights.forEach(insight => {
+    insights.forEach(message => {
         const li = document.createElement('li');
-        li.className = `insight-item ${insight.type}`;
-
-        li.innerHTML = `
-            <div class="insight-header">
-                <span class="insight-icon">${insight.icon}</span>
-                <span class="insight-title">${insight.title}</span>
-            </div>
-            <p class="insight-message">${insight.message}</p>
-            <p class="insight-action"><strong>Action:</strong> ${insight.action}</p>
-        `;
-
+        li.className = `insight-item`; // You can add dynamic classes based on message content if needed
+        li.innerHTML = `<span class="insight-icon">💡</span> <p class="insight-message">${message}</p>`;
         list.appendChild(li);
     });
-}
 
-/**
- * Display EMI prepayment scenarios
- * @param {object} results - Current results
- * @param {number} loanAmount - Principal
- * @param {number} interestRate - Annual rate
- * @param {number} totalMonths - Total months
- */
-function displayEmiPrepaymentScenarios(results, loanAmount, interestRate, totalMonths) {
-    const scenarios = [
-        { amount: 50000, element: 'prepay-50k' },
-        { amount: 100000, element: 'prepay-1lakh' },
-        { amount: 200000, element: 'prepay-2lakh' }
-    ];
-
-    scenarios.forEach(scenario => {
-        // Calculate new loan with prepayment
-        const newPrincipal = loanAmount - scenario.amount;
-        if (newPrincipal > 0) {
-            const newResults = calculateEMI(newPrincipal, interestRate, totalMonths);
-            const interestSaved = results.totalInterest - newResults.totalInterest;
-
-            const text = `Save ₹${interestSaved.toLocaleString('en-IN')} in interest, new EMI: ₹${newResults.emi.toLocaleString('en-IN')}`;
-            document.getElementById(scenario.element).textContent = text;
-        } else {
-            document.getElementById(scenario.element).textContent = 'Loan would be fully paid off!';
-        }
-    });
+    const breakEvenDisplay = document.getElementById('break-even-point-display');
+    if (breakEvenMonth) {
+        breakEvenDisplay.textContent = `Break-even Point: Principal paid exceeds interest paid at month ${breakEvenMonth}.`;
+    } else {
+        breakEvenDisplay.textContent = `Break-even Point: Not reached within the loan tenure, or principal always exceeded interest.`;
+    }
 }
 
 /**
@@ -362,6 +422,7 @@ function showEmiLoading() {
     const spinner = document.getElementById('emi-loading-spinner');
     if (spinner) {
         spinner.classList.remove('hidden');
+        emiForm.querySelector('button[type="submit"]').disabled = true;
     }
 }
 
@@ -372,20 +433,23 @@ function hideEmiLoading() {
     const spinner = document.getElementById('emi-loading-spinner');
     if (spinner) {
         spinner.classList.add('hidden');
+        emiForm.querySelector('button[type="submit"]').disabled = false;
     }
 }
 
 /**
- * Validate EMI form inputs
+ * Validate loan form inputs
  * @param {number} amount - Loan amount
- * @param {number} rate - Interest rate
+ * @param {number} rate - Annual interest rate (decimal)
  * @param {number} months - Total months
+ * @param {Date} startDate - Loan start date
  * @returns {boolean} Valid or not
  */
-function validateEmiInputs(amount, rate, months) {
+function validateLoanInputs(amount, rate, months, startDate) {
     if (isNaN(amount) || amount <= 0) return false;
-    if (isNaN(rate) || rate < 0 || rate > 50) return false;
-    if (isNaN(months) || months <= 0 || months > 360) return false;
+    if (isNaN(rate) || rate < 0 || rate > 1) return false; // Rate should be between 0 and 1 (0-100%)
+    if (isNaN(months) || months <= 0 || months > 600) return false; // Max 50 years
+    if (isNaN(startDate.getTime())) return false; // Check for valid date
     return true;
 }
 
@@ -396,3 +460,6 @@ function validateEmiInputs(amount, rate, months) {
 function showError(message) {
     alert(message); // In production, use a toast notification
 }
+
+// Initial call to add one prepayment field for convenience
+addPrepaymentField();
