@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/styles.css",
+    "/script.js",
+    "/shared.js",
+    "/ui.js",
+    "/validation.js",
+    "/calculations.js",
+    "/insights.js",
+    "/loanSimulator.js",
+    "/loanSimulator.ts",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/credit-card-leak/*",
+    "/emi-calculator/*",
+    "/subscription-leak/*",
+    "/assets/*",
+    "/*.css",
+    "/*.js",
+    "/*.png",
+    "/*.jpg",
+    "/*.jpeg",
+    "/*.svg",
+    "/*.ico"
+  ]
+}
