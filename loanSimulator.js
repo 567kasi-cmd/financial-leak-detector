@@ -49,12 +49,19 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
 
     const {
         modifiedSchedule,
-        finalEmi: modifiedEmi, // This will be the same as originalEmi if strategy is reduce tenure
+        finalEmi: modifiedEmi,
         finalTotalInterest: modifiedTotalInterest,
         finalTotalMonths: modifiedTotalMonths
-    } = applyPrepaymentsToSchedule(originalSchedule, sortedActualPrepayments, loanDetails);
+    } = applyPrepaymentsToSchedule(originalSchedule, sortedActualPrepayments, loanDetails, 'reduceTenure');
+
+    const {
+        finalEmi: reducedEmiScenarioEmi,
+        finalTotalInterest: reducedEmiScenarioInterest,
+        finalTotalMonths: reducedEmiScenarioMonths
+    } = applyPrepaymentsToSchedule(originalSchedule, sortedActualPrepayments, loanDetails, 'reduceEmi');
 
     const modifiedTotalPayment = loanAmount + modifiedTotalInterest;
+    const reducedEmiScenarioPayment = loanAmount + reducedEmiScenarioInterest;
 
     const modifiedLoan = {
         principal: loanAmount, // This is the original principal, not remaining
@@ -70,7 +77,18 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
     const loanProgress = getLoanProgress(modifiedSchedule, loanStartDate, currentDate);
 
     // --- 4. Calculate Prepayment Impact (comparison between original and modified loan) ---
-    const prepaymentImpact = calculatePrepaymentImpact(originalLoan, modifiedLoan);
+    const alternativeReduceEmiImpact = {
+        newEmi: reducedEmiScenarioEmi,
+        interestSaved: parseFloat((originalTotalInterest - reducedEmiScenarioInterest).toFixed(2)),
+        percentageSavings: parseFloat((originalTotalInterest > 0
+            ? ((originalTotalInterest - reducedEmiScenarioInterest) / originalTotalInterest) * 100
+            : 0).toFixed(2)),
+        totalMonths: reducedEmiScenarioMonths,
+        totalInterest: reducedEmiScenarioInterest,
+        totalPayment: parseFloat(reducedEmiScenarioPayment.toFixed(2))
+    };
+
+    const prepaymentImpact = calculatePrepaymentImpact(originalLoan, modifiedLoan, alternativeReduceEmiImpact);
 
     // --- 5. Simulate Hypothetical Prepayment Impact ---
     let hypotheticalPrepaymentImpactResult = null;

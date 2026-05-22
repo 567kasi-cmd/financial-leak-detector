@@ -114,16 +114,21 @@ export function generateAmortizationSchedule(principal, monthlyRate, emi, totalM
 
 /**
  * Applies prepayments to an existing amortization schedule.
- * Assumes prepayments reduce tenure while keeping EMI constant.
+ * Supports both the standard bank-style flow (keep EMI, reduce tenure)
+ * and the alternative flow (keep tenure, recalculate EMI).
  * @param {Array<object>} baseSchedule - The original amortization schedule.
  * @param {Array<{amount: number, date: Date}>} prepayments - Sorted array of prepayments.
  * @param {object} loanDetails - Original loan details including loanAmount, annualInterestRate, loanStartDate.
+ * @param {'reduceTenure'|'reduceEmi'} strategy - How prepayments should affect the loan.
  * @returns {{modifiedSchedule: Array<object>, finalEmi: number, finalTotalInterest: number, finalTotalMonths: number}}
  */
-export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetails) {
+export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetails, strategy = 'reduceTenure') {
     let currentBalance = loanDetails.loanAmount;
-    let currentEmi = baseSchedule[0] ? baseSchedule[0].emi : calculateEMI(loanDetails.loanAmount, loanDetails.annualInterestRate / 12, loanDetails.loanTenureMonths);
+    const originalEmi = baseSchedule[0] ? baseSchedule[0].emi : calculateEMI(loanDetails.loanAmount, loanDetails.annualInterestRate / 12, loanDetails.loanTenureMonths);
+    let currentEmi = originalEmi;
+    let scenarioEmi = originalEmi;
     let modifiedSchedule = [];
+    let lastNonZeroScheduledEmi = 0;
     let cumulativePrincipalPaid = 0;
     let cumulativeInterestPaid = 0;
     let monthCounter = 0;
@@ -162,13 +167,21 @@ export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetail
             break;
         }
 
+        if (strategy === 'reduceEmi') {
+            const remainingMonthsIncludingCurrent = Math.max(1, tempSchedule.length - i);
+            scenarioEmi = calculateEMI(currentBalance, monthlyRate, remainingMonthsIncludingCurrent);
+            currentEmi = scenarioEmi;
+        } else {
+            currentEmi = originalEmi;
+        }
+        const scheduledEmiForMonth = currentEmi;
+
         const interestComponent = currentBalance * monthlyRate;
         let principalComponent = currentEmi - interestComponent;
 
         // If EMI is less than interest, it's a debt trap scenario, principal increases
         if (principalComponent < 0) {
-            principalComponent = 0; // Principal doesn't reduce
-            currentBalance += Math.abs(principalComponent); // Balance increases by the negative principal component
+            throw new Error('Invalid loan state: EMI fell below monthly interest.');
         }
 
         // Adjust for last payment if balance is less than EMI
@@ -182,6 +195,9 @@ export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetail
 
         cumulativePrincipalPaid += principalComponent;
         cumulativeInterestPaid += interestComponent;
+        if (scheduledEmiForMonth > 0) {
+            lastNonZeroScheduledEmi = scheduledEmiForMonth;
+        }
 
         modifiedSchedule.push({
             month: monthCounter,
@@ -198,11 +214,14 @@ export function applyPrepaymentsToSchedule(baseSchedule, prepayments, loanDetail
 
     const finalTotalInterest = modifiedSchedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
     const finalTotalMonths = modifiedSchedule.length;
+    const summaryEmi = strategy === 'reduceEmi'
+        ? parseFloat((lastNonZeroScheduledEmi || 0).toFixed(2))
+        : originalEmi;
 
     return {
         modifiedSchedule: modifiedSchedule,
-        finalEmi: currentEmi, // This will be the last EMI, which might be adjusted
-        finalTotalInterest: finalTotalInterest,
+        finalEmi: parseFloat(summaryEmi.toFixed(2)),
+        finalTotalInterest: parseFloat(finalTotalInterest.toFixed(2)),
         finalTotalMonths: finalTotalMonths
     };
 }
@@ -257,27 +276,20 @@ export function getLoanProgress(schedule, loanStartDate, currentDate) {
 /**
  * Calculates the impact of actual prepayments by comparing original and modified loan scenarios.
  * @param {object} originalLoan - Summary of the loan without prepayments.
- * @param {object} modifiedLoan - Summary of the loan with prepayments.
+ * @param {object} modifiedLoan - Summary of the loan with prepayments under reduce-tenure mode.
+ * @param {object|null} alternativeReduceEmiImpact - Optional reduce-EMI comparison summary.
  * @returns {object} Prepayment impact details.
  */
-export function calculatePrepaymentImpact(originalLoan, modifiedLoan) {
+export function calculatePrepaymentImpact(originalLoan, modifiedLoan, alternativeReduceEmiImpact = null) {
     const interestSaved = originalLoan.totalInterest - modifiedLoan.totalInterest;
     const monthsReduced = originalLoan.totalMonths - modifiedLoan.totalMonths;
     const percentageSavings = originalLoan.totalInterest > 0 ? (interestSaved / originalLoan.totalInterest * 100) : 0;
-
-    // Placeholder for "reduce EMI" scenario - actual implementation would require re-calculating EMI
-    // For now, we assume "reduce tenure" is the default impact.
-    const alternativeReduceEmiImpact = {
-        newEmi: modifiedLoan.emi, // This would be the new EMI if tenure was kept same
-        interestSaved: interestSaved, // Same interest saved
-        percentageSavings: percentageSavings
-    };
 
     return {
         interestSaved: parseFloat(interestSaved.toFixed(2)),
         monthsReduced: monthsReduced,
         percentageSavings: parseFloat(percentageSavings.toFixed(2)),
-        alternativeReduceEmiImpact: alternativeReduceEmiImpact // For UI display
+        alternativeReduceEmiImpact: alternativeReduceEmiImpact
     };
 }
 

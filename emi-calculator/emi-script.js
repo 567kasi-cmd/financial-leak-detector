@@ -651,7 +651,7 @@ function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hyp
     const prepayment = document.getElementById('loan-summary-prepayment');
 
     if (prepaymentImpact && prepaymentImpact.interestSaved > 0) {
-        primary.textContent = `Current prepayments already save ${formatCurrency(prepaymentImpact.interestSaved)} and shorten the loan by ${prepaymentImpact.monthsReduced} months.`;
+        primary.textContent = `Default mode keeps your EMI at ${formatCurrency(modifiedLoan.emi)} and cuts ${prepaymentImpact.monthsReduced} months by saving ${formatCurrency(prepaymentImpact.interestSaved)} in interest.`;
     } else if (loanHealth.score < 60) {
         primary.textContent = 'This structure looks expensive. Focus on lowering tenure or adding early prepayments.';
     } else {
@@ -665,6 +665,8 @@ function updateScenarioSummary(originalLoan, modifiedLoan, prepaymentImpact, hyp
 
     if (hypotheticalPrepaymentImpact && hypotheticalPrepaymentImpact.interestSaved > 0) {
         prepayment.textContent = `Your what-if prepayment can save another ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} if timed well.`;
+    } else if (prepaymentImpact?.alternativeReduceEmiImpact?.newEmi && prepaymentImpact.alternativeReduceEmiImpact.newEmi < modifiedLoan.emi) {
+        prepayment.textContent = `If you prefer keeping tenure closer to the original plan, the alternative EMI can step down to about ${formatCurrency(prepaymentImpact.alternativeReduceEmiImpact.newEmi)} instead of shortening tenure.`;
     } else {
         prepayment.textContent = 'Early prepayments usually have the highest effect before the loan crosses the break-even point.';
     }
