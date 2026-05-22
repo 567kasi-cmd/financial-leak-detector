@@ -67,7 +67,7 @@ export function validatePrepaymentInputs(rawPrepayments) {
         if (itemErrors.length > 0) {
             errors.push(...itemErrors);
         } else {
-            validatedData.push({ amount, date });
+            validatedData.push({ amount: Math.round(amount), date });
         }
     });
 
@@ -115,7 +115,7 @@ export function validateHypotheticalPrepayment(amountStr, dateStr) {
     }
 
     if (errors.length === 0) {
-        validatedData = { amount, date };
+        validatedData = { amount: Math.round(amount), date };
     }
 
     return {

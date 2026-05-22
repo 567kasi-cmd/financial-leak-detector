@@ -1,6 +1,6 @@
 const RUPEE_SYMBOL = '\u20B9';
 
-export function formatCurrency(amount, minimumFractionDigits = 0, maximumFractionDigits = 2) {
+export function formatCurrency(amount, minimumFractionDigits = 0, maximumFractionDigits = 0) {
     if (!Number.isFinite(Number(amount))) {
         return `${RUPEE_SYMBOL}0`;
     }
@@ -123,7 +123,14 @@ export function attachSyncedSlider(input, options) {
         return null;
     }
 
-    const { min, max, step, defaultValue = min, formatter = (value) => value } = options;
+    const {
+        min,
+        max,
+        step,
+        defaultValue = min,
+        formatter = (value) => value,
+        parser = (value) => Number(value)
+    } = options;
     const container = document.createElement('div');
     container.className = 'input-slider';
     container.innerHTML = `
@@ -137,26 +144,46 @@ export function attachSyncedSlider(input, options) {
 
     const slider = container.querySelector('input');
     const current = container.querySelector('.input-slider-current');
+    const normalizeValue = (rawValue) => {
+        const parsedValue = parser(rawValue);
+        if (!Number.isFinite(parsedValue)) {
+            return null;
+        }
+
+        const clampedValue = Math.min(max, Math.max(min, parsedValue));
+        return Number.isInteger(step) ? Math.round(clampedValue) : clampedValue;
+    };
 
     const syncFromSlider = () => {
-        input.value = slider.value;
-        current.textContent = formatter(Number(slider.value));
+        const normalizedValue = normalizeValue(slider.value);
+        if (normalizedValue === null) {
+            return;
+        }
+
+        input.value = String(normalizedValue);
+        current.textContent = formatter(normalizedValue);
         input.dispatchEvent(new Event('input', { bubbles: true }));
     };
 
     const syncFromInput = () => {
-        const numericValue = Number(input.value);
-        if (!Number.isFinite(numericValue)) {
+        const normalizedValue = normalizeValue(input.value);
+        if (normalizedValue === null) {
             return;
         }
 
-        const clampedValue = Math.min(max, Math.max(min, numericValue));
-        slider.value = String(clampedValue);
-        current.textContent = formatter(clampedValue);
+        slider.value = String(normalizedValue);
+        current.textContent = formatter(normalizedValue);
     };
 
     slider.addEventListener('input', syncFromSlider);
     input.addEventListener('input', syncFromInput);
+    input.addEventListener('blur', () => {
+        const normalizedValue = normalizeValue(input.value);
+        if (normalizedValue !== null) {
+            input.value = String(normalizedValue);
+            current.textContent = formatter(normalizedValue);
+        }
+    });
     input.insertAdjacentElement('afterend', container);
     input.dataset.sliderAttached = 'true';
     syncFromInput();

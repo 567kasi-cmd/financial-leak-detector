@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
         max: 50000000,
         step: 50000,
         defaultValue: 5000000,
-        formatter: (value) => formatCurrency(value, 0, 0)
+        formatter: (value) => formatCurrency(value, 0, 0),
+        parser: (value) => Math.round(Number(value))
     });
 
     attachSyncedSlider(document.getElementById('interest-rate'), {
@@ -77,7 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
         max: 30,
         step: 1,
         defaultValue: 20,
-        formatter: (value) => `${value}y`
+        formatter: (value) => `${value}y`,
+        parser: (value) => Math.round(Number(value))
     });
 
     attachSyncedSlider(document.getElementById('loan-tenure-months'), {
@@ -85,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
         max: 11,
         step: 1,
         defaultValue: 0,
-        formatter: (value) => `${value}m`
+        formatter: (value) => `${value}m`,
+        parser: (value) => Math.round(Number(value))
     });
 
     const loanTypeSelect = document.getElementById('loan-type');
@@ -216,6 +219,15 @@ function ensurePrepaymentExperience() {
         hypotheticalSmall.insertAdjacentElement('afterend', controls);
     }
 
+    const loanAmountField = document.getElementById('loan-amount');
+    if (loanAmountField?.nextElementSibling && !document.getElementById('rounded-values-note')) {
+        const note = document.createElement('small');
+        note.id = 'rounded-values-note';
+        note.className = 'block mt-2 helper-text';
+        note.textContent = 'We use rounded values to ensure accurate financial calculations.';
+        loanAmountField.nextElementSibling.insertAdjacentElement('afterend', note);
+    }
+
     if (!document.getElementById('actual-prepayment-section') && prepaymentHeading?.parentElement) {
         const wrapper = document.createElement('div');
         wrapper.id = 'actual-prepayment-section';
@@ -284,7 +296,7 @@ function ensurePrepaymentExperience() {
                         <span id="scenario-current-emi" class="value">â‚¹0</span>
                     </div>
                     <div class="comparison-item">
-                        <span>Interest Saved</span>
+                        <span>Total Interest</span>
                         <span id="scenario-current-interest-saved" class="value">â‚¹0</span>
                     </div>
                     <div class="comparison-item">
@@ -299,7 +311,7 @@ function ensurePrepaymentExperience() {
                         <span id="scenario-hypothetical-emi" class="value">â‚¹0</span>
                     </div>
                     <div class="comparison-item">
-                        <span>Interest Saved</span>
+                        <span>Total Interest</span>
                         <span id="scenario-hypothetical-interest-saved" class="value">â‚¹0</span>
                     </div>
                     <div class="comparison-item">
@@ -317,11 +329,16 @@ function ensurePrepaymentExperience() {
     }
 
     if (hypotheticalAmountInput) {
+        hypotheticalAmountInput.addEventListener('blur', () => normalizeRupeeInputValue(hypotheticalAmountInput));
         hypotheticalAmountInput.addEventListener('input', debounce(handleWhatIfInputChange, 150));
     }
 
     if (hypotheticalDateInput) {
         hypotheticalDateInput.addEventListener('input', debounce(handleWhatIfInputChange, 150));
+    }
+
+    if (loanAmountField) {
+        loanAmountField.addEventListener('blur', () => normalizeRupeeInputValue(loanAmountField));
     }
 }
 
@@ -330,6 +347,17 @@ function getHypotheticalPrepaymentInput() {
         amountStr: hypotheticalAmountInput.value.trim(),
         dateStr: hypotheticalDateInput.value.trim()
     };
+}
+
+function normalizeRupeeInputValue(input) {
+    if (!input || input.value.trim() === '') {
+        return;
+    }
+
+    const roundedValue = Math.round(Number(input.value));
+    if (Number.isFinite(roundedValue)) {
+        input.value = String(roundedValue);
+    }
 }
 
 function resetHypotheticalComparison() {
@@ -365,10 +393,10 @@ function renderHypotheticalComparison(baseLoan, hypotheticalPrepaymentImpact) {
     document.getElementById('hypothetical-amount').textContent = formatCurrency(hypotheticalPrepaymentImpact.amount);
     document.getElementById('hypothetical-date').textContent = formatDate(hypotheticalPrepaymentImpact.date);
     document.getElementById('scenario-current-emi').textContent = formatCurrency(baseLoan.emi);
-    document.getElementById('scenario-current-interest-saved').textContent = formatCurrency(0);
+    document.getElementById('scenario-current-interest-saved').textContent = formatCurrency(baseLoan.totalInterest);
     document.getElementById('scenario-current-tenure').textContent = formatTenure(baseLoan.totalMonths);
     document.getElementById('scenario-hypothetical-emi').textContent = formatCurrency(resultingLoan.emi);
-    document.getElementById('scenario-hypothetical-interest-saved').textContent = formatCurrency(hypotheticalPrepaymentImpact.interestSaved);
+    document.getElementById('scenario-hypothetical-interest-saved').textContent = formatCurrency(resultingLoan.totalInterest);
     document.getElementById('scenario-hypothetical-tenure').textContent = formatTenure(resultingLoan.totalMonths);
 }
 
@@ -428,13 +456,14 @@ async function runSimulation({ scrollToResults = false } = {}) {
     showEmiLoading();
 
     // Get input values
-    const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+    const loanAmount = Math.round(parseFloat(document.getElementById('loan-amount').value));
     const annualInterestRate = parseFloat(document.getElementById('interest-rate').value); // Keep as percentage for validation
     const years = parseInt(document.getElementById('loan-tenure-years').value) || 0;
     const months = parseInt(document.getElementById('loan-tenure-months').value) || 0;
     const loanTenureMonths = (years * 12) + months;
     const loanStartDate = document.getElementById('loan-start-date').value;
-    const monthlyIncome = parseFloat(document.getElementById('monthly-income').value) || null; // Pass for insights
+    const monthlyIncomeRaw = document.getElementById('monthly-income').value;
+    const monthlyIncome = monthlyIncomeRaw ? Math.round(parseFloat(monthlyIncomeRaw)) : null;
 
     // Validate main loan inputs
     const loanValidation = validateLoanInputs(loanAmount, annualInterestRate, loanTenureMonths, loanStartDate);
