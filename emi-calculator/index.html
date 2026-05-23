@@ -145,10 +145,10 @@
                             <div class="form-group">
                                 <label for="loan-tenure">Loan Tenure</label>
                                 <div class="tenure-inputs">
-                                    <input type="number" id="loan-tenure-years" min="0" max="30" placeholder="Years" required>
+                                    <input type="number" id="loan-tenure-years" min="0" max="50" placeholder="Years" required>
                                     <input type="number" id="loan-tenure-months" min="0" max="11" placeholder="Months">
                                 </div>
-                                <small>Maximum 30 years for home loans</small>
+                                <small>Enter the exact tenure you want to evaluate.</small>
                             </div>
 
                             <div class="form-group">
@@ -251,6 +251,10 @@
                         <div class="comparison-panel">
                             <h4>Original Loan</h4>
                             <div class="comparison-item">
+                                <span>Principal</span>
+                                <span id="compare-original-principal" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
                                 <span>EMI</span>
                                 <span id="compare-original-emi" class="value">₹0</span>
                             </div>
@@ -269,6 +273,10 @@
                         </div>
                         <div class="comparison-panel">
                             <h4>After Prepayments</h4>
+                            <div class="comparison-item">
+                                <span>Principal</span>
+                                <span id="compare-modified-principal" class="value">₹0</span>
+                            </div>
                             <div class="comparison-item">
                                 <span>EMI</span>
                                 <span id="compare-modified-emi" class="value">₹0</span>
@@ -611,3 +619,6 @@
     <script type="module" src="emi-script.js"></script>
 </body>
 </html>
+
+
+

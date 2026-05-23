@@ -24,19 +24,25 @@ import { generateEnhancedInsights } from './insights.js';
  */
 export async function simulateLoan(loanDetails, actualPrepayments = [], currentDate = new Date(), hypotheticalPrepayment = null) {
     const { loanAmount, annualInterestRate, loanTenureMonths, loanStartDate, monthlyIncome } = loanDetails;
+    const userInput = Object.freeze({
+        principal: Math.round(Number(loanAmount) || 0),
+        interestRate: Number(annualInterestRate) || 0,
+        tenureMonths: Math.round(Number(loanTenureMonths) || 0),
+        loanStartDate: new Date(loanStartDate)
+    });
     const monthlyRate = annualInterestRate / 12;
 
     // --- 1. Calculate Original Loan (without any prepayments) ---
-    const originalEmi = calculateEMI(loanAmount, monthlyRate, loanTenureMonths);
-    const originalSchedule = generateAmortizationSchedule(loanAmount, monthlyRate, originalEmi, loanTenureMonths, loanStartDate);
+    const originalEmi = calculateEMI(userInput.principal, monthlyRate, userInput.tenureMonths);
+    const originalSchedule = generateAmortizationSchedule(userInput.principal, monthlyRate, originalEmi, userInput.tenureMonths, userInput.loanStartDate);
 
     const originalTotalInterest = originalSchedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
-    const originalTotalPayment = loanAmount + originalTotalInterest;
+    const originalTotalPayment = userInput.principal + originalTotalInterest;
 
     const originalLoan = {
-        principal: loanAmount,
+        principal: userInput.principal,
         annualInterestRate: annualInterestRate,
-        totalMonths: originalSchedule.length, // Use actual length in case of early payoff
+        totalMonths: userInput.tenureMonths,
         emi: originalEmi,
         totalInterest: originalTotalInterest,
         totalPayment: originalTotalPayment,
@@ -46,6 +52,7 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
     // --- 2. Apply Actual Prepayments to generate the Modified Loan ---
     // Sort prepayments by date to ensure correct application order
     const sortedActualPrepayments = [...actualPrepayments].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const hasActualPrepayments = sortedActualPrepayments.length > 0;
 
     const reduceTenureScenario = applyPrepaymentsToSchedule(originalSchedule, sortedActualPrepayments, loanDetails, 'reduce-tenure');
     const reduceEmiScenario = applyPrepaymentsToSchedule(originalSchedule, sortedActualPrepayments, loanDetails, 'reduce-emi');
@@ -56,10 +63,10 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
         finalTotalMonths: modifiedTotalMonths
     } = reduceTenureScenario;
 
-    const modifiedTotalPayment = loanAmount + modifiedTotalInterest;
+    const modifiedTotalPayment = userInput.principal + modifiedTotalInterest;
 
     const modifiedLoan = {
-        principal: loanAmount,
+        principal: userInput.principal,
         annualInterestRate: annualInterestRate,
         totalMonths: modifiedTotalMonths,
         emi: modifiedEmi,
@@ -69,14 +76,26 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
     };
 
     const reduceEmiLoan = {
-        principal: loanAmount,
+        principal: userInput.principal,
         annualInterestRate: annualInterestRate,
         totalMonths: reduceEmiScenario.finalTotalMonths,
         emi: reduceEmiScenario.finalEmi,
         totalInterest: reduceEmiScenario.finalTotalInterest,
-        totalPayment: loanAmount + reduceEmiScenario.finalTotalInterest,
+        totalPayment: userInput.principal + reduceEmiScenario.finalTotalInterest,
         schedule: reduceEmiScenario.modifiedSchedule
     };
+
+    if (!hasActualPrepayments && modifiedLoan.totalMonths !== userInput.tenureMonths) {
+        throw new Error('Tenure override bug');
+    }
+
+    if (!hasActualPrepayments && modifiedLoan.emi !== originalLoan.emi) {
+        throw new Error('EMI mismatch without prepayments');
+    }
+
+    if (hasActualPrepayments && originalLoan.emi > 0 && reduceEmiLoan.emi < originalLoan.emi * 0.8) {
+        throw new Error('Invalid EMI calculation');
+    }
 
     // --- 3. Calculate Loan Progress as of currentDate ---
     const loanProgress = getLoanProgress(modifiedSchedule, loanStartDate, currentDate);
@@ -114,6 +133,23 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
 
     // --- Final Output Structure ---
     return {
+        userInput,
+        calculatedOutput: {
+            emi: originalLoan.emi,
+            totalInterest: originalLoan.totalInterest,
+            totalPayment: originalLoan.totalPayment,
+            amortizationSchedule: originalSchedule
+        },
+        actualPlan: {
+            emi: modifiedLoan.emi,
+            totalInterest: modifiedLoan.totalInterest,
+            totalPayment: modifiedLoan.totalPayment,
+            totalMonths: modifiedLoan.totalMonths,
+            amortizationSchedule: modifiedSchedule
+        },
+        simulationContext: {
+            hypotheticalPrepayment
+        },
         emi: modifiedEmi, // Final EMI after prepayments (will be original EMI if reduce tenure)
         totalInterest: modifiedTotalInterest, // Final total interest after prepayments
         totalPayment: modifiedTotalPayment, // Final total payment after prepayments
