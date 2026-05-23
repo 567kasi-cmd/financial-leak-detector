@@ -240,6 +240,12 @@ function buildPrepaymentScenario(baseSchedule, prepayments, loanDetails, strateg
             currentEmi = calculateEMI(currentBalance, monthlyRate, remainingMonths);
 
             if (scheduledEmi > 0 && currentEmi < scheduledEmi * 0.8) {
+                console.error('Invalid EMI calculation', {
+                    scheduledEmi,
+                    currentEmi,
+                    strategy,
+                    currentBalance
+                });
                 throw new Error('Invalid EMI calculation');
             }
         }
@@ -416,6 +422,12 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
 
     const newEmi = calculateEMI(remainingPrincipal, monthlyRate, remainingMonths);
     if (baseLoan.emi > 0 && newEmi < baseLoan.emi * 0.8) {
+        console.error('Invalid EMI calculation', {
+            baseEmi: baseLoan.emi,
+            newEmi,
+            remainingPrincipal,
+            remainingMonths
+        });
         throw new Error('Invalid EMI calculation');
     }
     const reduceEmiSchedule = generateAmortizationSchedule(
@@ -439,6 +451,24 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
         interestSaved: roundCurrency(interestSaved),
         monthsReduced,
         percentageSavings: roundCurrency(percentageSavings),
+        comparisonScenarios: {
+            reduceTenure: {
+                emi: roundCurrency(baseLoan.emi),
+                totalInterest: roundCurrency(reduceTenureTotalInterest),
+                totalPayment: roundCurrency(baseLoan.principal + reduceTenureTotalInterest),
+                totalMonths: reduceTenureTotalMonths,
+                interestSaved: roundCurrency(baseLoan.totalInterest - reduceTenureTotalInterest),
+                monthsReduced: Math.max(0, baseLoan.totalMonths - reduceTenureTotalMonths)
+            },
+            reduceEmi: {
+                emi: roundCurrency(newEmi),
+                totalInterest: roundCurrency(totalInterestWithWhatIf),
+                totalPayment: roundCurrency(baseLoan.principal + totalInterestWithWhatIf),
+                totalMonths: totalMonthsWithWhatIf,
+                interestSaved: roundCurrency(baseLoan.totalInterest - totalInterestWithWhatIf),
+                monthsReduced: Math.max(0, baseLoan.totalMonths - totalMonthsWithWhatIf)
+            }
+        },
         resultingLoan: {
             emi: roundCurrency(baseLoan.emi),
             totalInterest: roundCurrency(reduceTenureTotalInterest),
@@ -512,6 +542,12 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
 
     const reduceEmi = calculateEMI(newPrincipal, monthlyRate, remainingMonths);
     if (currentEmi > 0 && reduceEmi < currentEmi * 0.8) {
+        console.error('Invalid EMI calculation', {
+            currentEmi,
+            reduceEmi,
+            newPrincipal,
+            remainingMonths
+        });
         return {
             isValid: false,
             error: 'Invalid EMI calculation'

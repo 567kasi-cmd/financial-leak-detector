@@ -134,7 +134,7 @@ export function generateEnhancedInsights(simulationResults) {
             type: 'warning',
             icon: 'i',
             title: 'High interest burden',
-            message: `Interest adds up to roughly ${Math.round(interestRatio * 100)}% of the borrowed amount.`,
+            message: `Total interest over the full loan tenure is roughly ${Math.round(interestRatio * 100)}% of the principal.`,
             action: 'Compare shorter tenure and prepayment options before locking the plan.'
         });
     }

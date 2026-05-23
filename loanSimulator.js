@@ -86,14 +86,26 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
     };
 
     if (!hasActualPrepayments && modifiedLoan.totalMonths !== userInput.tenureMonths) {
+        console.error('Tenure override bug', {
+            expectedTenureMonths: userInput.tenureMonths,
+            actualTenureMonths: modifiedLoan.totalMonths
+        });
         throw new Error('Tenure override bug');
     }
 
     if (!hasActualPrepayments && modifiedLoan.emi !== originalLoan.emi) {
+        console.error('EMI mismatch without prepayments', {
+            expectedEmi: originalLoan.emi,
+            actualEmi: modifiedLoan.emi
+        });
         throw new Error('EMI mismatch without prepayments');
     }
 
     if (hasActualPrepayments && originalLoan.emi > 0 && reduceEmiLoan.emi < originalLoan.emi * 0.8) {
+        console.error('Invalid EMI calculation', {
+            originalEmi: originalLoan.emi,
+            reduceEmi: reduceEmiLoan.emi
+        });
         throw new Error('Invalid EMI calculation');
     }
 
