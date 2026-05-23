@@ -5,6 +5,8 @@ import { attachSyncedSlider, debounce, formatCurrency, formatDate, setButtonLoad
 
 const presets={home:{rate:8.5,years:20,months:0,amount:5000000},car:{rate:9.25,years:5,months:0,amount:800000},personal:{rate:13.5,years:3,months:0,amount:500000},education:{rate:10.25,years:7,months:0,amount:1200000},business:{rate:14.5,years:10,months:0,amount:2500000}};
 let emiPieChartInstance,principalInterestChartInstance,balanceOverTimeChartInstance,lastSimulationResult=null,hasRenderedOnce=false,hypotheticalAmountInput,hypotheticalDateInput,applyWhatIfToPlanCheckbox;
+const uiState={tenureYears:0,tenureMonthsInput:0,userEnteredTenureYears:0,userEnteredTenureMonths:0,tenureTouched:false};
+let suspendTenureTracking=false;
 
 const $=id=>document.getElementById(id);
 const fmtTenure=m=>{const n=Math.max(0,Math.round(Number(m)||0));return `${Math.floor(n/12)}y ${n%12}m`;};
@@ -16,6 +18,8 @@ function init(){
   const form=$('emi-form');
   const prepaymentsList=$('prepayments-list');
   const addPrepaymentBtn=$('add-prepayment');
+  const tenureYearsInput=$('loan-tenure-years');
+  const tenureMonthsInput=$('loan-tenure-months');
   hypotheticalAmountInput=$('hypothetical-prepayment-amount');
   hypotheticalDateInput=$('hypothetical-prepayment-date');
   form.addEventListener('submit',onSubmit);
@@ -25,6 +29,8 @@ function init(){
   [['loan-amount',{min:50000,max:50000000,step:50000,defaultValue:5000000,formatter:v=>formatCurrency(v,0,0),parser:v=>Math.round(Number(v))}],['interest-rate',{min:0,max:20,step:0.1,defaultValue:8.5,formatter:v=>`${v}%`}],['loan-tenure-years',{min:0,max:50,step:1,defaultValue:20,formatter:v=>`${v}y`,parser:v=>Math.round(Number(v))}],['loan-tenure-months',{min:0,max:11,step:1,defaultValue:0,formatter:v=>`${v}m`,parser:v=>Math.round(Number(v))}]].forEach(([id,opts])=>{const input=$(id); if(input){if(id==='loan-amount') input.addEventListener('blur',()=>normalizeInput(input)); attachSyncedSlider(input,opts);}});
   if($('loan-type')) $('loan-type').addEventListener('change',applyLoanPreset);
   if($('loan-start-date')&&!$('loan-start-date').value) $('loan-start-date').value=new Date().toISOString().split('T')[0];
+  if(tenureYearsInput) tenureYearsInput.addEventListener('input',()=>updateTenureState('input'));
+  if(tenureMonthsInput) tenureMonthsInput.addEventListener('input',()=>updateTenureState('input'));
   setupExperience(); addPrepaymentInput(); applyLoanPreset();
   displayMessage('info','Add real prepayments in the Actual Plan section. Use the simulation section separately to test an idea before applying it.','prepayment-tip');
   if(hypotheticalAmountInput){hypotheticalAmountInput.addEventListener('blur',()=>normalizeInput(hypotheticalAmountInput)); hypotheticalAmountInput.addEventListener('input',debounce(onAdvisorInputChange,150));}
@@ -32,7 +38,48 @@ function init(){
   form.addEventListener('input',debounce((event)=>{const t=event.target; if(!t) return; if(['hypothetical-prepayment-amount','hypothetical-prepayment-date','apply-what-if-to-plan'].includes(t.id)) return; if(hasRenderedOnce) runSimulation();},300));
 }
 
-function applyLoanPreset(){const preset=presets[$('loan-type')?.value]; if(!preset) return; [['loan-amount',preset.amount],['interest-rate',preset.rate],['loan-tenure-years',preset.years],['loan-tenure-months',preset.months]].forEach(([id,v])=>{if($(id)){$(id).value=String(v); $(id).dispatchEvent(new Event('input',{bubbles:true}));}});}
+function applyLoanPreset(){
+  const preset=presets[$('loan-type')?.value];
+  if(!preset) return;
+  [['loan-amount',preset.amount],['interest-rate',preset.rate]].forEach(([id,v])=>{if($(id)){$(id).value=String(v); $(id).dispatchEvent(new Event('input',{bubbles:true}));}});
+  if(!uiState.tenureTouched){
+    suspendTenureTracking=true;
+    if($('loan-tenure-years')){$('loan-tenure-years').value=String(preset.years); $('loan-tenure-years').dispatchEvent(new Event('input',{bubbles:true}));}
+    if($('loan-tenure-months')){$('loan-tenure-months').value=String(preset.months); $('loan-tenure-months').dispatchEvent(new Event('input',{bubbles:true}));}
+    suspendTenureTracking=false;
+    updateTenureState('preset');
+  }
+}
+
+function updateTenureState(source='system'){
+  const years=Math.max(0,Math.round(Number($('loan-tenure-years')?.value)||0));
+  const months=Math.min(11,Math.max(0,Math.round(Number($('loan-tenure-months')?.value)||0)));
+  uiState.tenureYears=years;
+  uiState.tenureMonthsInput=months;
+
+  if(source==='input' && !suspendTenureTracking){
+    uiState.userEnteredTenureYears=years;
+    uiState.userEnteredTenureMonths=months;
+    uiState.tenureTouched=true;
+  }
+
+  if($('loan-tenure-years') && $('loan-tenure-years').value !== String(years)){
+    $('loan-tenure-years').value=String(years);
+  }
+  if($('loan-tenure-months') && $('loan-tenure-months').value !== String(months)){
+    $('loan-tenure-months').value=String(months);
+  }
+}
+
+function protectTenureState(){
+  const currentYears=Math.max(0,Math.round(Number($('loan-tenure-years')?.value)||0));
+  const currentMonths=Math.min(11,Math.max(0,Math.round(Number($('loan-tenure-months')?.value)||0)));
+  if(currentYears!==uiState.tenureYears || currentMonths!==uiState.tenureMonthsInput){
+    console.error('BUG: Tenure overridden');
+    if($('loan-tenure-years')) $('loan-tenure-years').value=String(uiState.tenureYears);
+    if($('loan-tenure-months')) $('loan-tenure-months').value=String(uiState.tenureMonthsInput);
+  }
+}
 
 function setupExperience(){
   const prepaymentsList=$('prepayments-list'); const addPrepaymentBtn=$('add-prepayment');
@@ -52,7 +99,7 @@ function setupExperience(){
 function displayMessage(type,message,id=''){const container=$('message-container'); if(!container) return; if(id) clearMessages(id); const el=document.createElement('div'); el.className=`message-banner message-${type}`; if(id) el.id=id; el.textContent=message; container.appendChild(el);}
 function clearMessages(id=''){const container=$('message-container'); if(!container) return; if(!id){container.innerHTML=''; return;} const el=$(id); if(el) el.remove();}
 function collectRawPrepayments(){const rows=[]; document.querySelectorAll('.prepayment-item').forEach(item=>{const amount=item.querySelector('.prepayment-item-amount')?.value.trim()||''; const date=item.querySelector('.prepayment-item-date')?.value.trim()||''; if(amount||date) rows.push({amount,date});}); return rows;}
-function loanFormState(){const years=parseInt($('loan-tenure-years').value,10)||0; const months=parseInt($('loan-tenure-months').value,10)||0; return {loanAmount:Math.round(parseFloat($('loan-amount').value)),annualInterestRate:parseFloat($('interest-rate').value),loanTenureMonths:years*12+months,loanStartDate:$('loan-start-date').value,monthlyIncome:monthlyIncomeValue()};}
+function loanFormState(){protectTenureState(); const tenureMonths=(uiState.tenureYears*12)+uiState.tenureMonthsInput; return {loanAmount:Math.round(parseFloat($('loan-amount').value)),annualInterestRate:parseFloat($('interest-rate').value),loanTenureMonths:tenureMonths,loanStartDate:$('loan-start-date').value,monthlyIncome:monthlyIncomeValue()};}
 async function onSubmit(event){event.preventDefault(); await runSimulation({scrollToResults:true});}
 function onAdvisorInputChange(){if(!hasRenderedOnce){clearMessages('what-if-validation'); clearMessages('advisor-validation'); return;} refreshWhatIfComparison(true); refreshAdvisor(true);}
 async function runSimulation({scrollToResults=false}={}){
