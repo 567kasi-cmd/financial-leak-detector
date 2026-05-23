@@ -1,350 +1,235 @@
-// sub-script.js - Subscription Leak Analyzer Logic
+import { createMessageController, ensureMessageContainer, escapeHtml, formatCurrency } from '../shared.js';
 
-// Global variables
+function initApp() {
 let subscriptions = [];
 let subscriptionId = 0;
+let categoryChart = null;
 
-// Form elements
-const subForm = document.getElementById('subscription-form');
+const form = document.getElementById('subscription-form');
+const messageContainer = ensureMessageContainer(form.closest('.card') || form, 'subscription-message-container');
+const messages = createMessageController(messageContainer);
 
-// Event listeners
-subForm.addEventListener('submit', handleSubFormSubmit);
+form.addEventListener('submit', handleSubmit);
 
-/**
- * Handle subscription form submission
- * @param {event} e - Form submit event
- */
-function handleSubFormSubmit(e) {
-    e.preventDefault();
+function validateSubscription(name, cost) {
+    const errors = [];
 
-    // Get form values
+    if (!name || name.trim().length === 0) {
+        errors.push('Subscription name is required.');
+    }
+    if (!Number.isFinite(cost) || cost <= 0) {
+        errors.push('Monthly cost must be greater than 0.');
+    }
+
+    return errors;
+}
+
+function handleSubmit(event) {
+    event.preventDefault();
+    messages.clear();
+
     const name = document.getElementById('sub-name').value.trim();
     const cost = parseFloat(document.getElementById('sub-cost').value);
     const category = document.getElementById('sub-category').value;
     const usage = document.getElementById('sub-used').value;
+    const errors = validateSubscription(name, cost);
 
-    // Validate inputs
-    if (!validateSubInputs(name, cost)) {
-        showError('Please enter valid subscription details');
+    if (errors.length > 0) {
+        messages.show('error', errors[0]);
         return;
     }
 
-    // Create subscription object
-    const subscription = {
+    subscriptions.push({
         id: ++subscriptionId,
-        name: name,
-        cost: cost,
-        category: category,
-        usage: usage,
-        monthlyCost: cost,
+        name,
+        cost,
+        category,
+        usage,
         annualCost: cost * 12
-    };
+    });
 
-    // Add to subscriptions array
-    subscriptions.push(subscription);
-
-    // Update UI
-    updateSubscriptionList();
-    updateSummary();
-    analyzeSubscriptions();
-
-    // Reset form
-    subForm.reset();
-
-    // Show results if hidden
-    document.getElementById('sub-results').classList.remove('hidden');
+    render();
+    form.reset();
 }
 
-/**
- * Update the subscription list display
- */
-function updateSubscriptionList() {
-    const container = document.getElementById('subscriptions-container');
+function render() {
+    const results = document.getElementById('sub-results');
+    const list = document.getElementById('subscriptions-container');
 
     if (subscriptions.length === 0) {
-        container.innerHTML = '<p class="empty-state">No subscriptions added yet. Add your first subscription above!</p>';
+        results.classList.add('hidden');
+        list.innerHTML = '<p class="empty-state">No subscriptions added yet. Add your first subscription above.</p>';
         return;
     }
 
-    container.innerHTML = '';
+    results.classList.remove('hidden');
+    renderSubscriptionList(list);
+    renderSummary();
+    renderUsageBreakdown();
+    renderCategoryChart();
+    renderExpensiveServices();
+    renderInsights();
+    renderCancellationList();
+}
 
-    subscriptions.forEach(sub => {
-        const subItem = document.createElement('div');
-        subItem.className = 'subscription-item';
-        subItem.innerHTML = `
+function renderSubscriptionList(container) {
+    container.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    subscriptions.forEach((subscription) => {
+        const item = document.createElement('div');
+        item.className = 'subscription-item';
+        item.innerHTML = `
             <div class="sub-info">
-                <strong>${sub.name}</strong>
-                <span class="sub-category">${sub.category}</span>
-                <span class="sub-usage usage-${sub.usage}">${sub.usage}</span>
+                <strong>${escapeHtml(subscription.name)}</strong>
+                <span class="sub-category">${escapeHtml(subscription.category)}</span>
+                <span class="sub-usage usage-${escapeHtml(subscription.usage)}">${escapeHtml(subscription.usage)}</span>
             </div>
             <div class="sub-cost">
-                <span class="monthly">₹${sub.cost.toLocaleString('en-IN')}/month</span>
-                <span class="annual">₹${sub.annualCost.toLocaleString('en-IN')}/year</span>
+                <span class="monthly">${formatCurrency(subscription.cost)}/month</span>
+                <span class="annual">${formatCurrency(subscription.annualCost)}/year</span>
             </div>
-            <button class="btn btn-small btn-danger" onclick="removeSubscription(${sub.id})">
-                Remove
-            </button>
+            <button class="btn btn-small btn-danger" data-remove-id="${subscription.id}">Remove</button>
         `;
-        container.appendChild(subItem);
+        fragment.appendChild(item);
+    });
+
+    container.appendChild(fragment);
+    container.querySelectorAll('[data-remove-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+            subscriptions = subscriptions.filter((subscription) => subscription.id !== Number(button.dataset.removeId));
+            render();
+        });
     });
 }
 
-/**
- * Update summary statistics
- */
-function updateSummary() {
-    const totalMonthly = subscriptions.reduce((sum, sub) => sum + sub.cost, 0);
-    const totalAnnual = totalMonthly * 12;
+function renderSummary() {
+    const totalMonthly = subscriptions.reduce((sum, subscription) => sum + subscription.cost, 0);
     const count = subscriptions.length;
     const average = count > 0 ? totalMonthly / count : 0;
 
-    document.getElementById('monthly-total').textContent = `₹${totalMonthly.toLocaleString('en-IN')}`;
-    document.getElementById('yearly-total').textContent = `₹${totalAnnual.toLocaleString('en-IN')}`;
-    document.getElementById('service-count').textContent = count;
-    document.getElementById('average-cost').textContent = `₹${average.toFixed(0).toLocaleString('en-IN')}`;
+    document.getElementById('monthly-total').textContent = formatCurrency(totalMonthly);
+    document.getElementById('yearly-total').textContent = formatCurrency(totalMonthly * 12);
+    document.getElementById('service-count').textContent = String(count);
+    document.getElementById('average-cost').textContent = formatCurrency(average);
+    document.getElementById('total-monthly').textContent = formatCurrency(totalMonthly);
+    document.getElementById('total-annual').textContent = formatCurrency(totalMonthly * 12);
+    document.getElementById('total-services').textContent = String(count);
+
+    const potentialSavings = subscriptions
+        .filter((subscription) => subscription.usage === 'rarely' || subscription.usage === 'never')
+        .reduce((sum, subscription) => sum + subscription.annualCost, 0);
+    document.getElementById('potential-savings').textContent = formatCurrency(potentialSavings);
 }
 
-/**
- * Analyze subscriptions and generate insights
- */
-function analyzeSubscriptions() {
-    if (subscriptions.length === 0) return;
-
-    // Calculate totals for results section
-    const totalMonthly = subscriptions.reduce((sum, sub) => sum + sub.cost, 0);
-    const totalAnnual = totalMonthly * 12;
-
-    // Update result metrics
-    document.getElementById('total-monthly').textContent = `₹${totalMonthly.toLocaleString('en-IN')}`;
-    document.getElementById('total-annual').textContent = `₹${totalAnnual.toLocaleString('en-IN')}`;
-    document.getElementById('total-services').textContent = subscriptions.length;
-
-    // Calculate potential savings (unused services)
-    const unusedServices = subscriptions.filter(sub => sub.usage === 'rarely' || sub.usage === 'never');
-    const potentialSavings = unusedServices.reduce((sum, sub) => sum + sub.cost, 0) * 12;
-    document.getElementById('potential-savings').textContent = `₹${potentialSavings.toLocaleString('en-IN')}`;
-
-    // Update usage breakdown
-    updateUsageBreakdown();
-
-    // Update category chart
-    updateCategoryChart();
-
-    // Generate expensive services list
-    updateExpensiveServices();
-
-    // Generate insights
-    const insights = generateSubInsights(subscriptions, totalMonthly, totalAnnual, potentialSavings);
-    displaySubInsights(insights);
-
-    // Generate cancellation recommendations
-    updateCancellationList(unusedServices);
-}
-
-/**
- * Update usage breakdown statistics
- */
-function updateUsageBreakdown() {
-    const usageCounts = {
-        daily: subscriptions.filter(s => s.usage === 'daily').length,
-        weekly: subscriptions.filter(s => s.usage === 'weekly').length,
-        monthly: subscriptions.filter(s => s.usage === 'monthly').length,
-        rarely: subscriptions.filter(s => s.usage === 'rarely').length,
-        never: subscriptions.filter(s => s.usage === 'never').length
-    };
-
-    document.getElementById('daily-use').textContent = `${usageCounts.daily} services`;
-    document.getElementById('weekly-use').textContent = `${usageCounts.weekly} services`;
-    document.getElementById('monthly-use').textContent = `${usageCounts.monthly} services`;
-    document.getElementById('rarely-use').textContent = `${usageCounts.rarely} services`;
-    document.getElementById('never-use').textContent = `${usageCounts.never} services`;
-}
-
-/**
- * Update category breakdown chart
- */
-function updateCategoryChart() {
-    const categoryTotals = {};
-    subscriptions.forEach(sub => {
-        categoryTotals[sub.category] = (categoryTotals[sub.category] || 0) + sub.cost;
+function renderUsageBreakdown() {
+    ['daily', 'weekly', 'monthly', 'rarely', 'never'].forEach((usage) => {
+        const count = subscriptions.filter((subscription) => subscription.usage === usage).length;
+        document.getElementById(`${usage}-use`).textContent = `${count} service${count === 1 ? '' : 's'}`;
     });
+}
 
-    const ctx = document.getElementById('category-chart');
-    if (!ctx) return;
-
-    // Destroy existing chart if it exists
-    if (window.categoryChart) {
-        window.categoryChart.destroy();
+function renderCategoryChart() {
+    const canvas = document.getElementById('category-chart');
+    if (!canvas || typeof Chart === 'undefined') {
+        return;
     }
 
-    const labels = Object.keys(categoryTotals);
-    const data = Object.values(categoryTotals);
+    const categoryTotals = subscriptions.reduce((map, subscription) => {
+        map[subscription.category] = (map[subscription.category] || 0) + subscription.cost;
+        return map;
+    }, {});
 
-    window.categoryChart = new Chart(ctx, {
+    if (categoryChart) {
+        categoryChart.destroy();
+    }
+
+    categoryChart = new Chart(canvas, {
         type: 'pie',
         data: {
-            labels: labels,
+            labels: Object.keys(categoryTotals),
             datasets: [{
-                data: data,
-                backgroundColor: [
-                    '#3498db', '#e74c3c', '#2ecc71', '#f39c12',
-                    '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
-                ],
-                borderColor: '#fff',
-                borderWidth: 2
+                data: Object.values(categoryTotals),
+                backgroundColor: ['#1f7a8c', '#bfdbf7', '#ff6b6b', '#4caf50', '#f4b942', '#5c5470', '#7d8597']
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    position: 'bottom'
-                }
+                legend: { position: 'bottom' }
             }
         }
     });
 }
 
-/**
- * Update expensive services list
- */
-function updateExpensiveServices() {
+function renderExpensiveServices() {
     const container = document.getElementById('expensive-services');
-
-    // Sort by cost descending and take top 5
-    const topServices = subscriptions
-        .sort((a, b) => b.cost - a.cost)
-        .slice(0, 5);
-
     container.innerHTML = '';
 
-    topServices.forEach((service, index) => {
-        const serviceItem = document.createElement('div');
-        serviceItem.className = 'expensive-item';
-        serviceItem.innerHTML = `
-            <div class="rank">#${index + 1}</div>
-            <div class="service-details">
-                <strong>${service.name}</strong>
-                <span class="category">${service.category}</span>
-            </div>
-            <div class="cost">
-                <span class="monthly-cost">₹${service.cost.toLocaleString('en-IN')}/month</span>
-                <span class="annual-cost">₹${service.annualCost.toLocaleString('en-IN')}/year</span>
-            </div>
-        `;
-        container.appendChild(serviceItem);
-    });
+    subscriptions
+        .slice()
+        .sort((left, right) => right.cost - left.cost)
+        .slice(0, 5)
+        .forEach((subscription, index) => {
+            const item = document.createElement('div');
+            item.className = 'expensive-item';
+            item.innerHTML = `
+                <div class="rank">#${index + 1}</div>
+                <div class="service-details">
+                    <strong>${escapeHtml(subscription.name)}</strong>
+                    <span class="category">${escapeHtml(subscription.category)}</span>
+                </div>
+                <div class="cost">
+                    <span class="monthly-cost">${formatCurrency(subscription.cost)}/month</span>
+                    <span class="annual-cost">${formatCurrency(subscription.annualCost)}/year</span>
+                </div>
+            `;
+            container.appendChild(item);
+        });
 }
 
-/**
- * Generate subscription-specific insights
- * @param {array} subs - Subscriptions array
- * @param {number} totalMonthly - Total monthly cost
- * @param {number} totalAnnual - Total annual cost
- * @param {number} potentialSavings - Potential savings from unused services
- * @returns {array} Insights array
- */
-function generateSubInsights(subs, totalMonthly, totalAnnual, potentialSavings) {
+function renderInsights() {
+    const totalMonthly = subscriptions.reduce((sum, subscription) => sum + subscription.cost, 0);
+    const potentialSavings = subscriptions
+        .filter((subscription) => subscription.usage === 'rarely' || subscription.usage === 'never')
+        .reduce((sum, subscription) => sum + subscription.annualCost, 0);
+    const unusedCount = subscriptions.filter((subscription) => subscription.usage === 'rarely' || subscription.usage === 'never').length;
+
     const insights = [];
-
-    // High spending insight
-    if (totalMonthly > 5000) {
-        insights.push({
-            type: 'danger',
-            icon: '💸',
-            title: 'High Subscription Spending',
-            message: `You're spending ₹${totalMonthly.toLocaleString('en-IN')}/month on subscriptions - that's ${((totalMonthly / 50000) * 100).toFixed(0)}% of average monthly salary!`,
-            action: 'Review and cancel unused services to save significantly.'
-        });
-    } else if (totalMonthly > 2000) {
-        insights.push({
-            type: 'warning',
-            icon: '⚠️',
-            title: 'Moderate Subscription Costs',
-            message: `₹${totalMonthly.toLocaleString('en-IN')}/month is reasonable, but could be optimized.`,
-            action: 'Look for cheaper alternatives or family plans.'
-        });
-    }
-
-    // Unused services insight
-    const unusedCount = subs.filter(s => s.usage === 'rarely' || s.usage === 'never').length;
     if (unusedCount > 0) {
         insights.push({
             type: 'danger',
-            icon: '🗑️',
-            title: 'Unused Subscriptions Found',
-            message: `You have ${unusedCount} subscription${unusedCount > 1 ? 's' : ''} you rarely or never use, costing ₹${potentialSavings.toLocaleString('en-IN')}/year.`,
-            action: 'Cancel these services immediately to save money.'
+            icon: '!',
+            title: 'Immediate cancellation candidates',
+            message: `${unusedCount} service(s) appear underused and represent ${formatCurrency(potentialSavings)} per year.`,
+            action: 'Cancel the least-used subscriptions first to create instant monthly savings.'
         });
     }
-
-    // Too many services
-    if (subs.length > 10) {
+    if (totalMonthly > 3000) {
         insights.push({
             type: 'warning',
-            icon: '📊',
-            title: 'Too Many Subscriptions',
-            message: `You have ${subs.length} subscriptions - that's a lot to manage!`,
-            action: 'Consider consolidating services or using fewer platforms.'
+            icon: 'i',
+            title: 'Subscription budget is climbing',
+            message: `Monthly recurring spend is already at ${formatCurrency(totalMonthly)}.`,
+            action: 'Review duplicate streaming, software, and premium plans.'
         });
     }
-
-    // Category concentration
-    const categories = {};
-    subs.forEach(sub => {
-        categories[sub.category] = (categories[sub.category] || 0) + 1;
-    });
-
-    const maxCategory = Object.entries(categories).reduce((a, b) => categories[a[0]] > b[1] ? a : b);
-    if (maxCategory[1] > subs.length * 0.4) {
-        insights.push({
-            type: 'info',
-            icon: '🎯',
-            title: 'Category Concentration',
-            message: `${maxCategory[1]} of your ${subs.length} subscriptions are in ${maxCategory[0]}.`,
-            action: 'Consider if you need multiple services in the same category.'
-        });
-    }
-
-    // Expensive single service
-    const expensiveService = subs.find(s => s.cost > 2000);
-    if (expensiveService) {
-        insights.push({
-            type: 'warning',
-            icon: '💰',
-            title: 'Very Expensive Service',
-            message: `${expensiveService.name} costs ₹${expensiveService.cost.toLocaleString('en-IN')}/month - that's quite expensive!`,
-            action: 'Check if there are cheaper alternatives or negotiate a better rate.'
-        });
-    }
-
-    // Positive insights
     if (insights.length === 0) {
         insights.push({
             type: 'success',
-            icon: '✅',
-            title: 'Well-Managed Subscriptions',
-            message: 'Your subscriptions appear to be well-managed and reasonably priced.',
-            action: 'Keep monitoring and review annually.'
+            icon: '+',
+            title: 'Subscriptions look controlled',
+            message: 'There are no obvious red flags in the current subscription list.',
+            action: 'Keep reviewing recurring charges every few months.'
         });
     }
 
-    return insights;
-}
-
-/**
- * Display subscription insights
- * @param {array} insights - Array of insight objects
- */
-function displaySubInsights(insights) {
     const list = document.getElementById('sub-insight-list');
     list.innerHTML = '';
-
-    insights.forEach(insight => {
-        const li = document.createElement('li');
-        li.className = `insight-item ${insight.type}`;
-
-        li.innerHTML = `
+    insights.forEach((insight) => {
+        const item = document.createElement('li');
+        item.className = `insight-item ${insight.type}`;
+        item.innerHTML = `
             <div class="insight-header">
                 <span class="insight-icon">${insight.icon}</span>
                 <span class="insight-title">${insight.title}</span>
@@ -352,74 +237,40 @@ function displaySubInsights(insights) {
             <p class="insight-message">${insight.message}</p>
             <p class="insight-action"><strong>Action:</strong> ${insight.action}</p>
         `;
-
-        list.appendChild(li);
+        list.appendChild(item);
     });
 }
 
-/**
- * Update cancellation recommendations list
- * @param {array} unusedServices - Array of unused services
- */
-function updateCancellationList(unusedServices) {
+function renderCancellationList() {
     const container = document.getElementById('cancellation-list');
+    const candidates = subscriptions.filter((subscription) => subscription.usage === 'rarely' || subscription.usage === 'never');
 
-    if (unusedServices.length === 0) {
-        container.innerHTML = '<p class="no-cancellations">Great! No obvious cancellation candidates found.</p>';
+    if (candidates.length === 0) {
+        container.innerHTML = '<p class="no-cancellations">No clear cancellation candidates right now.</p>';
         return;
     }
 
     container.innerHTML = '';
-
-    unusedServices.forEach(service => {
-        const cancelItem = document.createElement('div');
-        cancelItem.className = 'cancel-item';
-        cancelItem.innerHTML = `
+    candidates.forEach((subscription) => {
+        const item = document.createElement('div');
+        item.className = 'cancel-item';
+        item.innerHTML = `
             <div class="cancel-info">
-                <strong>${service.name}</strong>
-                <span class="cancel-reason">Usage: ${service.usage}</span>
+                <strong>${escapeHtml(subscription.name)}</strong>
+                <span class="cancel-reason">Usage: ${escapeHtml(subscription.usage)}</span>
             </div>
             <div class="cancel-savings">
-                <span class="monthly-save">Save ₹${service.cost.toLocaleString('en-IN')}/month</span>
-                <span class="annual-save">₹${service.annualCost.toLocaleString('en-IN')}/year</span>
+                <span class="monthly-save">Save ${formatCurrency(subscription.cost)}/month</span>
+                <span class="annual-save">${formatCurrency(subscription.annualCost)}/year</span>
             </div>
         `;
-        container.appendChild(cancelItem);
+        container.appendChild(item);
     });
 }
-
-/**
- * Remove a subscription
- * @param {number} id - Subscription ID to remove
- */
-function removeSubscription(id) {
-    subscriptions = subscriptions.filter(sub => sub.id !== id);
-    updateSubscriptionList();
-    updateSummary();
-
-    if (subscriptions.length === 0) {
-        document.getElementById('sub-results').classList.add('hidden');
-    } else {
-        analyzeSubscriptions();
-    }
 }
 
-/**
- * Validate subscription form inputs
- * @param {string} name - Service name
- * @param {number} cost - Monthly cost
- * @returns {boolean} Valid or not
- */
-function validateSubInputs(name, cost) {
-    if (!name || name.trim().length === 0) return false;
-    if (isNaN(cost) || cost <= 0) return false;
-    return true;
-}
-
-/**
- * Show error message
- * @param {string} message - Error message
- */
-function showError(message) {
-    alert(message); // In production, use a toast notification
+try {
+    initApp();
+} catch (error) {
+    console.error('App crashed:', error);
 }

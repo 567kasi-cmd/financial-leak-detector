@@ -1,264 +1,218 @@
-// gold-loan-script.js - Gold Loan EMI Calculator Page Logic
+import { calculateLoanRepaymentDetails } from '../calculations.js';
+import {
+    attachSyncedSlider,
+    createMessageController,
+    debounce,
+    ensureMessageContainer,
+    formatCurrency,
+    formatPercent,
+    setButtonLoading
+} from '../shared.js';
 
-const goldLoanForm = document.getElementById('gold-loan-form');
-goldLoanForm.addEventListener('submit', handleGoldLoanFormSubmit);
+const form = document.getElementById('gold-loan-form');
+const submitButton = form.querySelector('button[type="submit"]');
+const spinner = document.getElementById('gl-loading-spinner');
+const chartCanvas = document.getElementById('gl-pie-chart');
+const messageContainer = ensureMessageContainer(form.closest('.card') || form, 'gold-loan-message-container');
+const messages = createMessageController(messageContainer);
 
-/**
- * Handle Gold Loan form submission
- * @param {Event} e - Form submit event
- */
-function handleGoldLoanFormSubmit(e) {
-    e.preventDefault();
+let hasRenderedOnce = false;
+let goldLoanChart = null;
 
-    const loanAmount = parseFloat(document.getElementById('loan-amount').value);
-    const interestRate = parseFloat(document.getElementById('interest-rate').value);
-    const totalMonths = parseInt(document.getElementById('loan-tenure').value);
-    const monthlyIncome = parseFloat(document.getElementById('monthly-income').value) || null;
+attachSyncedSlider(document.getElementById('loan-amount'), {
+    min: 10000,
+    max: 5000000,
+    step: 10000,
+    defaultValue: 200000,
+    formatter: (value) => formatCurrency(value, 0, 0)
+});
 
-    if (!validateGoldLoanInputs(loanAmount, interestRate, totalMonths)) {
-        showGLError('Please enter valid values (loan amount > 0, rate >= 0, tenure 1–84 months)');
-        return;
+attachSyncedSlider(document.getElementById('interest-rate'), {
+    min: 0,
+    max: 35,
+    step: 0.1,
+    defaultValue: 11.5,
+    formatter: (value) => `${value}%`
+});
+
+attachSyncedSlider(document.getElementById('loan-tenure'), {
+    min: 1,
+    max: 84,
+    step: 1,
+    defaultValue: 12,
+    formatter: (value) => `${value}m`
+});
+
+function validateInputs(amount, rate, months, income) {
+    const errors = [];
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        errors.push('Loan amount must be greater than 0.');
+    }
+    if (!Number.isFinite(rate) || rate < 0 || rate > 50) {
+        errors.push('Interest rate must be between 0 and 50.');
+    }
+    if (!Number.isFinite(months) || months <= 0 || months > 84) {
+        errors.push('Tenure must be between 1 and 84 months.');
+    }
+    if (income !== null && (!Number.isFinite(income) || income < 0)) {
+        errors.push('Monthly income cannot be negative.');
     }
 
-    showGLLoading();
-
-    setTimeout(() => {
-        try {
-            const results = calculateEMI(loanAmount, interestRate, totalMonths);
-            displayGoldLoanResults(results, loanAmount, interestRate, totalMonths, monthlyIncome);
-            document.getElementById('gl-results').scrollIntoView({ behavior: 'smooth' });
-            hideGLLoading();
-        } catch (error) {
-            showGLError('Calculation error: ' + error.message);
-            hideGLLoading();
-        }
-    }, 300);
+    return errors;
 }
 
-/**
- * Display gold loan results
- */
-function displayGoldLoanResults(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
-    // Metric cards
-    document.getElementById('gl-emi-amount').textContent = `₹${results.emi.toLocaleString('en-IN')}`;
-    document.getElementById('gl-total-amount').textContent = `₹${results.totalPayment.toLocaleString('en-IN')}`;
-    document.getElementById('gl-total-interest').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
-    document.getElementById('gl-tenure-display').textContent = `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
-
-    // Breakdown
-    document.getElementById('gl-principal').textContent = `₹${loanAmount.toLocaleString('en-IN')}`;
-    document.getElementById('gl-interest').textContent = `₹${results.totalInterest.toLocaleString('en-IN')}`;
-    const interestPct = ((results.totalInterest / loanAmount) * 100).toFixed(1);
-    document.getElementById('gl-interest-pct').textContent = `${interestPct}%`;
-    const processingFee = Math.round(loanAmount * 0.01);
-    document.getElementById('gl-processing-fee').textContent = `₹${processingFee.toLocaleString('en-IN')}`;
-
-    // Comparisons
-    updateGLComparisons(results.emi, loanAmount, interestRate, totalMonths);
-
-    // Chart
-    updateGLChart(loanAmount, results.totalInterest);
-
-    // Amortization table
-    populateGLTable(results.monthlyData);
-
-    // Insights
-    const insights = generateGLInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome);
-    displayGLInsights(insights);
-
-    // Show results
-    document.getElementById('gl-results').classList.remove('hidden');
-    document.getElementById('gl-chart-card').classList.remove('hidden');
-}
-
-/**
- * Update EMI comparison scenarios
- */
-function updateGLComparisons(currentEmi, loanAmount, interestRate, totalMonths) {
-    document.getElementById('gl-current-emi').textContent = `₹${currentEmi.toLocaleString('en-IN')}`;
-
-    const lowerRate = calculateEMI(loanAmount, Math.max(interestRate - 1, 0.01), totalMonths);
-    document.getElementById('gl-lower-rate-emi').textContent = `₹${lowerRate.emi.toLocaleString('en-IN')}`;
-
-    const higherRate = calculateEMI(loanAmount, interestRate + 1, totalMonths);
-    document.getElementById('gl-higher-rate-emi').textContent = `₹${higherRate.emi.toLocaleString('en-IN')}`;
-
-    const shorterMonths = Math.max(totalMonths - 3, 1);
-    const shorter = calculateEMI(loanAmount, interestRate, shorterMonths);
-    document.getElementById('gl-shorter-tenure-emi').textContent = `₹${shorter.emi.toLocaleString('en-IN')}`;
-}
-
-/**
- * Update pie/doughnut chart
- */
-function updateGLChart(principal, totalInterest) {
-    const ctx = document.getElementById('gl-pie-chart');
-    if (!ctx) return;
-
-    if (window.glPieChart) {
-        window.glPieChart.destroy();
-    }
-
-    window.glPieChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Principal', 'Interest'],
-            datasets: [{
-                data: [principal, totalInterest],
-                backgroundColor: ['#f39c12', '#e74c3c'],
-                borderColor: '#fff',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-}
-
-/**
- * Populate amortization table
- */
-function populateGLTable(monthlyData) {
-    const tbody = document.getElementById('gl-table-body');
-    tbody.innerHTML = '';
-
-    const fragment = document.createDocumentFragment();
-
-    monthlyData.forEach(data => {
-        const row = document.createElement('tr');
-
-        const cells = [
-            { text: data.month, cls: '' },
-            { text: `₹${Number(data.payment).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cls: 'currency' },
-            { text: `₹${Number(data.principal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cls: 'currency principal' },
-            { text: `₹${Number(data.interest).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cls: 'currency interest' },
-            { text: `₹${Number(data.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cls: 'currency balance' }
-        ];
-
-        cells.forEach(c => {
-            const td = document.createElement('td');
-            td.className = c.cls;
-            td.textContent = c.text;
-            row.appendChild(td);
-        });
-
-        fragment.appendChild(row);
-    });
-
-    tbody.appendChild(fragment);
-}
-
-/**
- * Generate gold-loan-specific insights
- */
-function generateGLInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
+function buildInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
     const insights = [];
+    const emiRatio = monthlyIncome ? (results.emi / monthlyIncome) * 100 : null;
 
-    // High interest rate warning
-    if (interestRate > 20) {
-        insights.push({
-            type: 'danger',
-            icon: '🚨',
-            title: 'Very High Interest Rate',
-            message: `${interestRate}% is exceptionally high for a gold loan.`,
-            action: 'Consider switching to a bank gold loan (7–15%) to save significantly on interest.'
-        });
-    } else if (interestRate > 12) {
+    if (interestRate > 18) {
         insights.push({
             type: 'warning',
-            icon: '⚠️',
-            title: 'Above-Average Interest Rate',
-            message: `${interestRate}% is higher than typical bank gold loan rates.`,
-            action: 'Compare with other lenders — banks often offer gold loans at 7–12%.'
-        });
-    } else {
-        insights.push({
-            type: 'success',
-            icon: '✅',
-            title: 'Competitive Interest Rate',
-            message: `${interestRate}% is a good rate for a gold loan.`,
-            action: 'Ensure timely repayments to retain your pledged gold.'
+            icon: 'i',
+            title: 'Rate is on the expensive side',
+            message: `${formatPercent(interestRate, 1)} is high for a secured gold loan.`,
+            action: 'Compare with bank offers or negotiate a lower rate if possible.'
         });
     }
 
-    // High interest burden
-    if (results.totalInterest > loanAmount * 0.25) {
+    if (results.totalInterest > loanAmount * 0.2) {
         insights.push({
             type: 'warning',
-            icon: '💸',
-            title: 'Significant Interest Cost',
-            message: `You'll pay ₹${results.totalInterest.toLocaleString('en-IN')} in interest — ${((results.totalInterest / loanAmount) * 100).toFixed(1)}% of your loan amount.`,
-            action: 'Consider prepaying or shortening the tenure to reduce total interest paid.'
+            icon: 'i',
+            title: 'Interest takes a meaningful bite',
+            message: `Total interest is ${formatCurrency(results.totalInterest)}, which is ${formatPercent((results.totalInterest / loanAmount) * 100, 1)} of the loan amount.`,
+            action: 'A shorter tenure or occasional prepayment can reduce this cost quickly.'
         });
     }
 
-    // Short tenure advisory
-    if (totalMonths <= 6) {
-        insights.push({
-            type: 'info',
-            icon: '📅',
-            title: 'Short Tenure',
-            message: `A ${totalMonths}-month tenure means high monthly EMI but lower total interest.`,
-            action: 'Ensure your cash flow can comfortably handle the monthly payments.'
-        });
-    }
-
-    // EMI affordability
-    if (monthlyIncome && monthlyIncome > 0) {
-        const emiRatio = (results.emi / monthlyIncome) * 100;
+    if (emiRatio !== null) {
         if (emiRatio > 50) {
             insights.push({
                 type: 'danger',
-                icon: '🚨',
-                title: 'High Financial Risk',
-                message: `EMI is ${emiRatio.toFixed(0)}% of your monthly income.`,
-                action: 'Consider a lower loan amount or longer tenure to reduce EMI burden.'
+                icon: '!',
+                title: 'EMI looks aggressive',
+                message: `The EMI consumes about ${formatPercent(emiRatio, 0)} of monthly income.`,
+                action: 'Reduce the loan amount or extend the tenure if cash flow is tight.'
             });
         } else if (emiRatio > 30) {
             insights.push({
                 type: 'warning',
-                icon: '⚠️',
-                title: 'Moderate EMI Burden',
-                message: `EMI takes ${emiRatio.toFixed(0)}% of your monthly income.`,
-                action: 'Ensure sufficient buffer for other expenses and emergencies.'
+                icon: 'i',
+                title: 'EMI needs monitoring',
+                message: `The EMI is about ${formatPercent(emiRatio, 0)} of monthly income.`,
+                action: 'Keep an emergency buffer for months with lower income.'
             });
         } else {
             insights.push({
                 type: 'success',
-                icon: '✅',
-                title: 'Healthy EMI Level',
-                message: `EMI is only ${emiRatio.toFixed(0)}% of your monthly income.`,
-                action: 'Great! You have good financial breathing room for other expenses.'
+                icon: '+',
+                title: 'EMI is relatively manageable',
+                message: `The EMI is about ${formatPercent(emiRatio, 0)} of monthly income.`,
+                action: 'This leaves better breathing room for other expenses.'
             });
         }
-    } else {
+    }
+
+    if (totalMonths <= 6) {
         insights.push({
             type: 'info',
-            icon: '💡',
-            title: 'EMI Affordability Check',
-            message: 'Ideally, your gold loan EMI should be less than 30–40% of monthly income.',
-            action: 'Enter your monthly income above to get personalized affordability insights.'
+            icon: 'i',
+            title: 'Short tenure chosen',
+            message: 'A short gold-loan tenure keeps interest lower but pushes the EMI up.',
+            action: 'Double-check cash flow before finalizing the shortest tenure.'
+        });
+    }
+
+    if (insights.length === 0) {
+        insights.push({
+            type: 'success',
+            icon: '+',
+            title: 'Balanced gold loan structure',
+            message: 'The current loan settings do not show any major warning signs.',
+            action: 'Verify lender charges such as valuation, storage, and foreclosure fees before borrowing.'
         });
     }
 
     return insights;
 }
 
-/**
- * Display insights list
- */
-function displayGLInsights(insights) {
-    const list = document.getElementById('gl-insight-list');
-    list.innerHTML = '';
+function renderResults(results, loanAmount, interestRate, totalMonths, monthlyIncome) {
+    document.getElementById('gl-emi-amount').textContent = formatCurrency(results.emi, 2, 2);
+    document.getElementById('gl-total-amount').textContent = formatCurrency(results.totalPayment, 2, 2);
+    document.getElementById('gl-total-interest').textContent = formatCurrency(results.totalInterest, 2, 2);
+    document.getElementById('gl-tenure-display').textContent = `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
 
-    insights.forEach(insight => {
-        const li = document.createElement('li');
-        li.className = `insight-item ${insight.type}`;
-        li.innerHTML = `
+    document.getElementById('gl-principal').textContent = formatCurrency(loanAmount, 2, 2);
+    document.getElementById('gl-interest').textContent = formatCurrency(results.totalInterest, 2, 2);
+    document.getElementById('gl-interest-pct').textContent = formatPercent((results.totalInterest / loanAmount) * 100, 1);
+    document.getElementById('gl-processing-fee').textContent = formatCurrency(Math.round(loanAmount * 0.01), 0, 0);
+
+    document.getElementById('gl-current-emi').textContent = formatCurrency(results.emi, 2, 2);
+    document.getElementById('gl-lower-rate-emi').textContent = formatCurrency(
+        calculateLoanRepaymentDetails(loanAmount, Math.max(0, interestRate - 1), totalMonths).emi,
+        2,
+        2
+    );
+    document.getElementById('gl-higher-rate-emi').textContent = formatCurrency(
+        calculateLoanRepaymentDetails(loanAmount, interestRate + 1, totalMonths).emi,
+        2,
+        2
+    );
+    document.getElementById('gl-shorter-tenure-emi').textContent = formatCurrency(
+        calculateLoanRepaymentDetails(loanAmount, interestRate, Math.max(1, totalMonths - 3)).emi,
+        2,
+        2
+    );
+
+    const tbody = document.getElementById('gl-table-body');
+    tbody.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    results.monthlyData.forEach((entry) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${entry.month}</td>
+            <td class="currency">${formatCurrency(entry.payment, 2, 2)}</td>
+            <td class="currency principal">${formatCurrency(entry.principal, 2, 2)}</td>
+            <td class="currency interest">${formatCurrency(entry.interest, 2, 2)}</td>
+            <td class="currency balance">${formatCurrency(entry.balance, 2, 2)}</td>
+        `;
+        fragment.appendChild(row);
+    });
+    tbody.appendChild(fragment);
+
+    if (chartCanvas && typeof Chart !== 'undefined') {
+        if (goldLoanChart) {
+            goldLoanChart.destroy();
+        }
+
+        goldLoanChart = new Chart(chartCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Principal', 'Interest'],
+                datasets: [{
+                    data: [loanAmount, results.totalInterest],
+                    backgroundColor: ['#d08c00', '#c44536'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    const insights = buildInsights(results, loanAmount, interestRate, totalMonths, monthlyIncome);
+    const insightList = document.getElementById('gl-insight-list');
+    insightList.innerHTML = '';
+    insights.forEach((insight) => {
+        const item = document.createElement('li');
+        item.className = `insight-item ${insight.type}`;
+        item.innerHTML = `
             <div class="insight-header">
                 <span class="insight-icon">${insight.icon}</span>
                 <span class="insight-title">${insight.title}</span>
@@ -266,31 +220,54 @@ function displayGLInsights(insights) {
             <p class="insight-message">${insight.message}</p>
             <p class="insight-action"><strong>Action:</strong> ${insight.action}</p>
         `;
-        list.appendChild(li);
+        insightList.appendChild(item);
     });
+
+    document.getElementById('gl-results').classList.remove('hidden');
+    document.getElementById('gl-chart-card').classList.remove('hidden');
 }
 
-/**
- * Validate gold loan form inputs
- */
-function validateGoldLoanInputs(amount, rate, months) {
-    if (isNaN(amount) || amount <= 0) return false;
-    if (isNaN(rate) || rate < 0 || rate > 50) return false;
-    if (isNaN(months) || months <= 0 || months > 84) return false;
-    return true;
+function calculate({ scroll = false, forceErrors = false } = {}) {
+    messages.clear();
+
+    const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+    const interestRate = parseFloat(document.getElementById('interest-rate').value);
+    const totalMonths = parseInt(document.getElementById('loan-tenure').value, 10);
+    const monthlyIncomeValue = document.getElementById('monthly-income').value;
+    const monthlyIncome = monthlyIncomeValue ? parseFloat(monthlyIncomeValue) : null;
+    const errors = validateInputs(loanAmount, interestRate, totalMonths, monthlyIncome);
+
+    if (errors.length > 0) {
+        if (hasRenderedOnce || forceErrors) {
+            messages.show('warning', errors[0]);
+        }
+        return;
+    }
+
+    setButtonLoading(submitButton, spinner, true, 'Calculate Gold Loan EMI', 'Calculating...');
+
+    try {
+        const results = calculateLoanRepaymentDetails(loanAmount, interestRate, totalMonths);
+        renderResults(results, loanAmount, interestRate, totalMonths, monthlyIncome);
+        hasRenderedOnce = true;
+
+        if (scroll) {
+            document.getElementById('gl-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (error) {
+        messages.show('error', `Calculation error: ${error.message}`);
+    } finally {
+        setButtonLoading(submitButton, spinner, false, 'Calculate Gold Loan EMI', 'Calculating...');
+    }
 }
 
-function showGLLoading() {
-    const spinner = document.getElementById('gl-loading-spinner');
-    if (spinner) spinner.classList.remove('hidden');
-}
+form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    calculate({ scroll: true, forceErrors: true });
+});
 
-function hideGLLoading() {
-    const spinner = document.getElementById('gl-loading-spinner');
-    if (spinner) spinner.classList.add('hidden');
-}
-
-function showGLError(message) {
-    alert(message);
-}
-
+form.addEventListener('input', debounce(() => {
+    if (hasRenderedOnce) {
+        calculate();
+    }
+}, 250));

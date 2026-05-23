@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMI Calculator | Loan EMI, Interest & Amortization Tool</title>
+    <title>Advanced Loan Simulator | Loan EMI, Interest & Amortization Tool</title>
     <meta name="description" content="Calculate loan EMI, total repayment, total interest, and amortization schedules for home loans, personal loans, and car loans with our free EMI calculator.">
-    <meta name="keywords" content="EMI calculator, loan EMI calculator, amortization schedule, home loan EMI, personal loan EMI, car loan EMI">
+    <meta name="keywords" content="EMI calculator, loan EMI calculator, amortization schedule, home loan EMI, personal loan EMI, car loan EMI, loan prepayment, loan simulator">
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="author" content="FinLeak">
     <meta name="theme-color" content="#3498db">
     <link rel="canonical" href="https://financial-leak-detector.pages.dev/emi-calculator/">
     <meta property="og:site_name" content="FinLeak">
-    <meta property="og:title" content="EMI Calculator | Loan EMI & Amortization Tool">
-    <meta property="og:description" content="Estimate EMI, total repayment, and total interest for home loans, car loans, and personal loans.">
+    <meta property="og:title" content="Advanced Loan Simulator | Loan EMI & Amortization Tool">
+    <meta property="og:description" content="Estimate EMI, total repayment, and total interest for home loans, car loans, and personal loans. Simulate prepayments and analyze loan health.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://financial-leak-detector.pages.dev/emi-calculator/">
     <meta property="og:locale" content="en_IN">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="EMI Calculator | FinLeak">
-    <meta name="twitter:description" content="Calculate EMI and compare how tenure, rate, and prepayments change total loan cost.">
+    <meta name="twitter:title" content="Advanced Loan Simulator | FinLeak">
+    <meta name="twitter:description" content="Calculate EMI and compare how tenure, rate, and prepayments change total loan cost. Simulate 'what if' scenarios.">
     <link rel="stylesheet" href="../styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="application/ld+json">
@@ -29,22 +29,22 @@
                     "@type": "BreadcrumbList",
                     "itemListElement": [
                         {"@type":"ListItem","position":1,"name":"Home","item":"https://financial-leak-detector.pages.dev/"},
-                        {"@type":"ListItem","position":2,"name":"EMI Calculator","item":"https://financial-leak-detector.pages.dev/emi-calculator/"}
+                        {"@type":"ListItem","position":2,"name":"Loan Simulator","item":"https://financial-leak-detector.pages.dev/emi-calculator/"}
                     ]
                 },
                 {
                     "@type": "WebPage",
-                    "name": "EMI Calculator",
+                    "name": "Advanced Loan Simulator",
                     "url": "https://financial-leak-detector.pages.dev/emi-calculator/",
-                    "description": "Free EMI calculator with loan repayment, interest, and amortization schedule breakdowns."
+                    "description": "Free advanced loan simulator with EMI calculation, repayment, interest, amortization schedule breakdowns, prepayment analysis, and loan health score."
                 },
                 {
                     "@type": "WebApplication",
-                    "name": "EMI Calculator",
+                    "name": "Advanced Loan Simulator",
                     "url": "https://financial-leak-detector.pages.dev/emi-calculator/",
                     "applicationCategory": "FinanceApplication",
                     "operatingSystem": "Any",
-                    "description": "Calculate loan EMI, total repayment, and amortization for multiple loan types.",
+                    "description": "Calculate loan EMI, total repayment, and amortization for multiple loan types. Simulate prepayments and analyze loan health.",
                     "offers": {
                         "@type": "Offer",
                         "price": "0",
@@ -92,7 +92,7 @@
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/credit-card-leak/">Credit Card</a></li>
-                <li><a href="/emi-calculator/">EMI Calculator</a></li>
+                <li><a href="/emi-calculator/">Loan Simulator</a></li>
                 <li><a href="/subscription-leak/">Subscriptions</a></li>
             </ul>
         </div>
@@ -101,10 +101,10 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>EMI Calculator</h1>
-            <p>Calculate loan EMIs, total interest, and amortization schedule for home loans, car loans, and personal loans</p>
+            <h1>Advanced Loan Simulator</h1>
+            <p>Calculate loan EMIs, total interest, and amortization schedule. Simulate prepayments and get smart insights.</p>
             <div class="hero-cta">
-                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Calculate EMI</button>
+                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Simulate Loan</button>
             </div>
         </div>
     </section>
@@ -113,12 +113,23 @@
         <!-- Input Section -->
         <section id="calculator" class="calculator-section">
             <div class="container">
-                <h2>Loan EMI Calculator</h2>
+                <h2>Loan Simulation Inputs</h2>
                 <div class="grid">
                     <!-- Input Card -->
                     <div class="card input-card">
-                        <h3>Enter Loan Details</h3>
+                        <h3>Loan Details</h3>
                         <form id="emi-form">
+                            <div class="form-group">
+                                <label for="loan-type">Loan Type</label>
+                                <select id="loan-type">
+                                    <option value="home">Home Loan</option>
+                                    <option value="car">Car Loan</option>
+                                    <option value="personal">Personal Loan</option>
+                                    <option value="education">Education Loan</option>
+                                    <option value="business">Business Loan</option>
+                                </select>
+                                <small>Choose a common loan profile to prefill a sensible rate and tenure.</small>
+                            </div>
                             <div class="form-group">
                                 <label for="loan-amount">Loan Amount (₹)</label>
                                 <input type="number" id="loan-amount" min="0" step="0.01" placeholder="e.g., 50,00,000" required>
@@ -134,10 +145,16 @@
                             <div class="form-group">
                                 <label for="loan-tenure">Loan Tenure</label>
                                 <div class="tenure-inputs">
-                                    <input type="number" id="loan-tenure-years" min="0" max="30" placeholder="Years" required>
+                                    <input type="number" id="loan-tenure-years" min="0" max="50" placeholder="Years" required>
                                     <input type="number" id="loan-tenure-months" min="0" max="11" placeholder="Months">
                                 </div>
-                                <small>Maximum 30 years for home loans</small>
+                                <small>Enter the exact tenure you want to evaluate.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="loan-start-date">Loan Start Date</label>
+                                <input type="date" id="loan-start-date" required>
+                                <small>Date when the loan started</small>
                             </div>
 
                             <div class="form-group">
@@ -146,14 +163,37 @@
                                 <small>Used to calculate EMI affordability ratio</small>
                             </div>
 
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <span class="btn-text">Calculate EMI</span>
+                            <hr class="my-4">
+
+                            <h3>Prepayments (Optional)</h3>
+                            <div id="prepayments-list" class="prepayment-items-list">
+                                <!-- Prepayment items will be added here -->
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-block mt-2" id="add-prepayment">Add Prepayment</button>
+                            <small class="block mt-2">Add any extra payments you have made or plan to make.</small>
+
+                            <hr class="my-4">
+
+                            <h3>"What If" Prepayment Scenario (Optional)</h3>
+                            <div class="form-group">
+                                <label for="hypothetical-prepayment-amount">Amount (₹)</label>
+                                <input type="number" id="hypothetical-prepayment-amount" min="0" step="0.01" placeholder="e.g., 1,00,000">
+                            </div>
+                            <div class="form-group">
+                                <label for="hypothetical-prepayment-date">Date</label>
+                                <input type="date" id="hypothetical-prepayment-date">
+                            </div>
+                            <small class="block mt-2">Simulate the impact of a single future prepayment.</small>
+
+
+                            <button type="submit" class="btn btn-primary btn-block mt-4">
+                                <span class="btn-text">Run Simulation</span>
                                 <span id="emi-loading-spinner" class="spinner hidden"></span>
                             </button>
                         </form>
                     </div>
 
-                    <!-- Chart Card -->
+                    <!-- Chart Card - EMI Breakdown -->
                     <div class="card chart-card hidden" id="emi-chart-card">
                         <h3>EMI Breakdown</h3>
                         <canvas id="emi-pie-chart"></canvas>
@@ -162,86 +202,260 @@
             </div>
         </section>
 
+        <!-- Message Container -->
+        <div id="message-container" class="container message-container mt-3"></div>
+
         <!-- Results Section -->
         <section id="emi-results" class="results-section hidden">
             <div class="container">
-                <h2>Your EMI Calculation</h2>
+                <h2>Your Loan Simulation Results</h2>
 
                 <!-- Key Metrics -->
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <div class="metric-icon">💰</div>
                         <div class="metric-content">
-                            <small>Monthly EMI</small>
+                            <small>Original EMI</small>
                             <h3 id="emi-amount">₹0</h3>
-                        </div>
-                    </div>
-
-                    <div class="metric-card">
-                        <div class="metric-icon">📊</div>
-                        <div class="metric-content">
-                            <small>Total Amount</small>
-                            <h3 id="total-amount">₹0</h3>
                         </div>
                     </div>
 
                     <div class="metric-card">
                         <div class="metric-icon">💸</div>
                         <div class="metric-content">
-                            <small>Total Interest</small>
+                            <small>Total Interest Paid</small>
                             <h3 id="total-interest">₹0</h3>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-content">
+                            <small>Total Payment</small>
+                            <h3 id="total-payment">₹0</h3>
                         </div>
                     </div>
 
                     <div class="metric-card">
                         <div class="metric-icon">📅</div>
                         <div class="metric-content">
-                            <small>Loan Tenure</small>
+                            <small>Projected Final Tenure</small>
                             <h3 id="loan-tenure-display">0 months</h3>
                         </div>
                     </div>
                 </div>
 
-                <!-- Breakdown Cards -->
-                <div class="grid mt-3">
-                    <div class="card">
-                        <h3>Payment Breakdown</h3>
-                        <div class="breakdown-item">
-                            <span>Principal Amount</span>
-                            <span id="emi-principal" class="value">₹0</span>
+                <div class="card mt-3">
+                    <h3>Before vs After</h3>
+                    <div class="comparison-grid">
+                        <div class="comparison-panel">
+                            <h4>Original Loan</h4>
+                            <div class="comparison-item">
+                                <span>Principal</span>
+                                <span id="compare-original-principal" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>EMI</span>
+                                <span id="compare-original-emi" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Interest</span>
+                                <span id="compare-original-interest" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Payment</span>
+                                <span id="compare-original-payment" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Tenure</span>
+                                <span id="compare-original-tenure" class="value">0m</span>
+                            </div>
                         </div>
-                        <div class="breakdown-item">
-                            <span>Total Interest</span>
-                            <span id="emi-interest" class="value">₹0</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span>Interest % of Principal</span>
-                            <span id="emi-percentage" class="value">0%</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span>Processing Fee (est.)</span>
-                            <span id="processing-fee" class="value">₹0</span>
+                        <div class="comparison-panel">
+                            <h4>After Prepayments</h4>
+                            <div class="comparison-item">
+                                <span>Principal</span>
+                                <span id="compare-modified-principal" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>EMI</span>
+                                <span id="compare-modified-emi" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Interest</span>
+                                <span id="compare-modified-interest" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Total Payment</span>
+                                <span id="compare-modified-payment" class="value">₹0</span>
+                            </div>
+                            <div class="comparison-item">
+                                <span>Tenure</span>
+                                <span id="compare-modified-tenure" class="value">0m</span>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="card">
-                        <h3>EMI Comparison</h3>
-                        <div class="comparison-item">
-                            <span>Current EMI</span>
-                            <span id="current-emi" class="value">₹0</span>
+                <div class="card mt-3">
+                    <h3>Scenario Summary</h3>
+                    <div class="summary-banner-grid">
+                        <div class="summary-banner">
+                            <small>Best Immediate Move</small>
+                            <p id="loan-summary-primary">Run a simulation to see the clearest next step.</p>
                         </div>
-                        <div class="comparison-item">
-                            <span>Lower Rate (-1%)</span>
-                            <span id="lower-rate-emi" class="value">₹0</span>
+                        <div class="summary-banner">
+                            <small>Interest Efficiency</small>
+                            <p id="loan-summary-interest">We will estimate how interest-heavy this structure is.</p>
                         </div>
-                        <div class="comparison-item">
-                            <span>Higher Rate (+1%)</span>
-                            <span id="higher-rate-emi" class="value">₹0</span>
+                        <div class="summary-banner">
+                            <small>Prepayment Signal</small>
+                            <p id="loan-summary-prepayment">Optional prepayments and what-if scenarios will be summarized here.</p>
                         </div>
-                        <div class="comparison-item">
-                            <span>Shorter Tenure (-1 year)</span>
-                            <span id="shorter-tenure-emi" class="value">₹0</span>
+                    </div>
+                </div>
+
+                <!-- Loan Progress -->
+                <div class="card mt-3">
+                    <h3>Loan Progress (as of today)</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-card small">
+                            <div class="metric-content">
+                                <small>EMIs Paid</small>
+                                <h4 id="progress-emis-paid">0</h4>
+                            </div>
                         </div>
+                        <div class="metric-card small">
+                            <div class="metric-content">
+                                <small>Principal Paid</small>
+                                <h4 id="progress-principal-paid">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-content">
+                                <small>Interest Paid</small>
+                                <h4 id="progress-interest-paid">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-content">
+                                <small>Remaining Balance</small>
+                                <h4 id="progress-remaining-balance">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-content">
+                                <small>Months Remaining</small>
+                                <h4 id="progress-months-remaining">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prepayment Impact -->
+                <div class="card mt-3">
+                    <h3>Prepayment Impact (Actual Prepayments)</h3>
+                    <div class="prepayment-impact-grid">
+                        <div class="impact-scenario">
+                            <h4>Scenario: Reduce Tenure (EMI Same)</h4>
+                            <p>Interest Saved: <span id="impact-tenure-interest-saved">₹0</span></p>
+                            <p>Months Reduced: <span id="impact-tenure-months-reduced">0</span></p>
+                            <p>Percentage Savings: <span id="impact-tenure-percentage-savings">0%</span></p>
+                        </div>
+                        <div class="impact-scenario">
+                            <h4>Scenario: Reduce EMI (Tenure Same)</h4>
+                            <p>New EMI: <span id="impact-emi-new-emi">₹0</span></p>
+                            <p>Interest Saved: <span id="impact-emi-interest-saved">₹0</span></p>
+                            <p>Percentage Savings: <span id="impact-emi-percentage-savings">0%</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3 hidden" id="smart-prepayment-advisor-card">
+                    <div class="scenario-comparison-header">
+                        <div>
+                            <h3>Smart Prepayment Insights</h3>
+                            <p class="helper-text">A financial-advisor style view of your latest prepayment idea.</p>
+                        </div>
+                        <p class="scenario-highlight" id="advisor-highlight">Enter a prepayment amount to see savings.</p>
+                    </div>
+                    <div class="summary-banner-grid">
+                        <div class="summary-banner">
+                            <small>Interest Saved</small>
+                            <p id="advisor-interest-saved">₹0</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>Tenure Reduced</small>
+                            <p id="advisor-tenure-saved">0m</p>
+                        </div>
+                        <div class="summary-banner">
+                            <small>EMI Reduction</small>
+                            <p id="advisor-emi-reduction">₹0</p>
+                        </div>
+                    </div>
+                    <div class="advisor-meta-grid mt-3">
+                        <div class="advisor-callout">
+                            <small>Recommendation</small>
+                            <p id="advisor-recommendation">Reduce tenure to maximize savings.</p>
+                        </div>
+                        <div class="advisor-callout">
+                            <small>Timing Insight</small>
+                            <p id="advisor-timing">Earlier prepayments usually create the highest interest savings.</p>
+                        </div>
+                    </div>
+                    <p class="helper-text mt-2" id="advisor-helper-text">Earlier prepayments save more interest.</p>
+                    <div class="table-container mt-3">
+                        <table class="monthly-table advisor-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>EMI</th>
+                                    <th>Interest</th>
+                                    <th>Tenure</th>
+                                </tr>
+                            </thead>
+                            <tbody id="advisor-comparison-body">
+                                <tr>
+                                    <td>Current</td>
+                                    <td>₹0</td>
+                                    <td>₹0</td>
+                                    <td>0m</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- What If Prepayment Impact -->
+                <div class="card mt-3 hidden" id="hypothetical-impact-card">
+                    <h3>"What If" Prepayment Impact</h3>
+                    <p>A prepayment of <span id="hypothetical-amount">₹0</span> on <span id="hypothetical-date"></span> could lead to:</p>
+                    <ul>
+                        <li>Additional Interest Saved: <span id="hypothetical-interest-saved">₹0</span></li>
+                        <li>Additional Months Reduced: <span id="hypothetical-months-reduced">0</span></li>
+                        <li>Percentage Savings: <span id="hypothetical-percentage-savings">0%</span></li>
+                    </ul>
+                </div>
+
+                <!-- Loan Health Score -->
+                <div class="card mt-3">
+                    <h3>Loan Health Score</h3>
+                    <div class="loan-health-display">
+                        <span id="loan-health-score" class="score">0</span>
+                        <span id="loan-health-rating" class="rating"></span>
+                        <p id="loan-health-message"></p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid mt-3">
+                    <div class="card chart-card">
+                        <h3>Principal vs Interest Timeline</h3>
+                        <canvas id="principal-interest-chart"></canvas>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Balance Over Time</h3>
+                        <canvas id="balance-over-time-chart"></canvas>
                     </div>
                 </div>
 
@@ -253,10 +467,14 @@
                             <thead>
                                 <tr>
                                     <th>Month</th>
+                                    <th>Date</th>
+                                    <th>Opening Balance</th>
                                     <th>EMI</th>
                                     <th>Principal</th>
                                     <th>Interest</th>
-                                    <th>Balance</th>
+                                    <th>Closing Balance</th>
+                                    <th>Cumulative Principal</th>
+                                    <th>Cumulative Interest</th>
                                 </tr>
                             </thead>
                             <tbody id="emi-table-body">
@@ -268,38 +486,21 @@
 
                 <!-- Insights Section -->
                 <div class="card mt-3">
-                    <h3>🎯 Loan Insights & Recommendations</h3>
+                    <h3>🎯 Smart Insights & Recommendations</h3>
                     <ul id="emi-insight-list" class="insight-list"></ul>
+                    <p id="break-even-point-display" class="mt-2"></p>
                 </div>
 
-                <!-- Prepayment Analysis -->
-                <div class="card mt-3">
-                    <h3>💡 Prepayment Benefits</h3>
-                    <div class="prepayment-scenarios">
-                        <div class="scenario-item">
-                            <h4>Prepay ₹50,000 annually</h4>
-                            <p id="prepay-50k">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                        <div class="scenario-item">
-                            <h4>Prepay ₹1,00,000 annually</h4>
-                            <p id="prepay-1lakh">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                        <div class="scenario-item">
-                            <h4>Prepay ₹2,00,000 annually</h4>
-                            <p id="prepay-2lakh">Save ₹0 in interest, reduce tenure by 0 months</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
 
         <section id="faq" class="faq-section">
             <div class="container">
-                <h2>EMI calculator FAQ</h2>
+                <h2>Loan Simulator FAQ</h2>
                 <div class="faq-grid">
                     <div class="faq-item">
-                        <h4>What is a healthy EMI-to-income ratio?</h4>
-                        <p>As a rule of thumb, total EMIs should usually stay below 40-50% of monthly take-home income. Lower is better because it leaves room for savings, emergencies, and day-to-day expenses.</p>
+                        <h4>What is a healthy EMI to income ratio?</h4>
+                        <p>As a rule of thumb, total EMIs should usually stay below 40-50% of monthly take-home income. Lower is better because it leaves room for savings, emergencies, and other financial goals.</p>
                     </div>
                     <div class="faq-item">
                         <h4>Does a shorter tenure always save money?</h4>
@@ -393,7 +594,7 @@
                     <div class="card">
                         <h3>Gold Loan EMI Calculator</h3>
                         <p>Calculate your gold loan EMI, total interest, and repayment schedule. Covers LTV, rates, and amortization.</p>
-                        <a class="btn btn-secondary" href="/emi-calculator/gold-loan/">Calculate gold loan EMI</a>
+                        <a class="btn btn-secondary" href="/emi-calculator/gold-loan.html">Calculate gold loan EMI</a>
                     </div>
                     <div class="card">
                         <h3>Subscription Leak Detector</h3>
@@ -415,9 +616,9 @@
         </div>
     </footer>
 
-    <script src="../calculations.js"></script>
-    <script src="../insights.js"></script>
-    <script src="../ui.js"></script>
-    <script src="emi-script.js"></script>
+    <script type="module" src="emi-script.js"></script>
 </body>
 </html>
+
+
+

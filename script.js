@@ -1,75 +1,90 @@
-// script.js - Main application logic and form handling
+import { createDebtCalculatorApp } from './ui.js';
+import { attachSyncedSlider, formatCurrency } from './shared.js';
 
-// Form elements
-const form = document.getElementById('calc-form');
+function initApp() {
+    attachSyncedSlider(document.getElementById('outstanding'), {
+        min: 1000,
+        max: 2000000,
+        step: 1000,
+        defaultValue: 50000,
+        formatter: (value) => formatCurrency(value, 0, 0)
+    });
 
-// Event listener
-form.addEventListener('submit', handleFormSubmit);
+    attachSyncedSlider(document.getElementById('rate'), {
+        min: 0,
+        max: 60,
+        step: 0.1,
+        defaultValue: 24,
+        formatter: (value) => `${value}%`
+    });
 
-/**
- * Handle form submission
- * @param {event} e - Form submit event
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
+    attachSyncedSlider(document.getElementById('min-payment'), {
+        min: 1,
+        max: 20,
+        step: 0.1,
+        defaultValue: 2,
+        formatter: (value) => `${value}%`
+    });
 
-    // Get input values
-    const outstanding = parseFloat(document.getElementById('outstanding').value);
-    const annualRate = parseFloat(document.getElementById('rate').value);
-    const minPaymentPercent = parseFloat(document.getElementById('min-payment').value);
-    const extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
+    attachSyncedSlider(document.getElementById('extra-payment'), {
+        min: 0,
+        max: 100000,
+        step: 500,
+        defaultValue: 0,
+        formatter: (value) => formatCurrency(value, 0, 0)
+    });
 
-    // Validate inputs
-    if (!validateInputs(outstanding, annualRate, minPaymentPercent)) {
-        showError('Please enter valid values (positive numbers only)');
-        return;
-    }
-
-    // Show loading
-    showLoading();
-
-    // Simulate calculation (setTimeout for smooth UX)
-    setTimeout(() => {
-        try {
-            // Perform calculations
-            const results = simulateDebtPayoff(outstanding, annualRate, minPaymentPercent, extraPayment);
-
-            // Display results
-            displayResults(results, outstanding, annualRate, minPaymentPercent, extraPayment);
-
-            // Display insights
-            const insights = generateEnhancedInsights(results, outstanding, annualRate, minPaymentPercent, extraPayment);
-            displayInsights(insights);
-
-            // Scroll to results
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-
-            hideLoading();
-        } catch (error) {
-            showError('Calculation error: ' + error.message);
-            hideLoading();
-        }
-    }, 300);
+    createDebtCalculatorApp({
+        formId: 'calc-form',
+        spinnerId: 'loading-spinner',
+        resultsSectionId: 'results',
+        chartCardId: 'chart-card',
+        messageContainerId: 'home-message-container',
+        idleButtonText: 'Analyze Debt',
+        loadingButtonText: 'Analyzing...',
+        inputIds: {
+            outstanding: 'outstanding',
+            rate: 'rate',
+            minPayment: 'min-payment',
+            extraPayment: 'extra-payment'
+        },
+        outputIds: {
+            monthlyRate: 'monthly-rate',
+            payoffTime: 'payoff-time',
+            totalPaid: 'total-paid',
+            totalInterest: 'money-lost',
+            principal: 'breakdown-principal',
+            breakdownInterest: 'breakdown-interest',
+            breakdownExtra: 'breakdown-extra',
+            breakdownPercentage: 'breakdown-percentage',
+            healthScore: 'financial-health-score',
+            riskLevel: 'risk-level',
+            riskBar: 'risk-bar',
+            riskDetails: 'risk-details',
+            insightsList: 'insight-list',
+            tableBody: 'amortizationBody',
+            tableFooter: 'amortizationFooter',
+            tableHeader: '#amortization-table thead tr',
+            toggleFull: 'toggle-full',
+            toggleYearly: 'toggle-yearly',
+            scenarios: [
+                { extra: 5000, elementId: 'scenario-1' },
+                { extra: 10000, elementId: 'scenario-2' },
+                { extra: 25000, elementId: 'scenario-3' }
+            ],
+            scenarioContainerId: 'home-prepayment-scenarios'
+        },
+        chartIds: {
+            pie: 'pie-chart',
+            balance: 'balance-trend-chart',
+            composition: 'composition-chart'
+        },
+        assumedMonthlyIncome: 50000
+    });
 }
 
-/**
- * Validate form inputs
- * @param {number} outstanding - Outstanding amount
- * @param {number} rate - Interest rate
- * @param {number} minPayment - Minimum payment
- * @returns {boolean} Valid or not
- */
-function validateInputs(outstanding, rate, minPayment) {
-    if (isNaN(outstanding) || outstanding <= 0) return false;
-    if (isNaN(rate) || rate < 0 || rate > 100) return false;
-    if (isNaN(minPayment) || minPayment <= 0 || minPayment > 100) return false;
-    return true;
-}
-
-/**
- * Show error message
- * @param {string} message - Error message
- */
-function showError(message) {
-    alert(message); // In production, use a toast notification
+try {
+    initApp();
+} catch (error) {
+    console.error('App crashed:', error);
 }
