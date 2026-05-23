@@ -402,6 +402,18 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
         return null;
     }
 
+    const reduceTenureMonths = recalculateTenure(remainingPrincipal, monthlyRate, baseLoan.emi);
+    const reduceTenureSchedule = generateAmortizationSchedule(
+        remainingPrincipal,
+        monthlyRate,
+        baseLoan.emi,
+        Math.max(1, reduceTenureMonths),
+        hypotheticalDate
+    );
+    const reduceTenureInterest = reduceTenureSchedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
+    const reduceTenureTotalInterest = interestPaidBefore + reduceTenureInterest;
+    const reduceTenureTotalMonths = (remainingEntry.month - 1) + reduceTenureSchedule.length;
+
     const newEmi = calculateEMI(remainingPrincipal, monthlyRate, remainingMonths);
     if (baseLoan.emi > 0 && newEmi < baseLoan.emi * 0.8) {
         throw new Error('Invalid EMI calculation');
@@ -417,8 +429,8 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
     const totalInterestWithWhatIf = interestPaidBefore + reduceEmiInterest;
     const totalMonthsWithWhatIf = (remainingEntry.month - 1) + reduceEmiSchedule.length;
 
-    const interestSaved = baseLoan.totalInterest - totalInterestWithWhatIf;
-    const monthsReduced = baseLoan.totalMonths - totalMonthsWithWhatIf;
+    const interestSaved = baseLoan.totalInterest - reduceTenureTotalInterest;
+    const monthsReduced = baseLoan.totalMonths - reduceTenureTotalMonths;
     const percentageSavings = baseLoan.totalInterest > 0 ? (interestSaved / baseLoan.totalInterest * 100) : 0;
 
     return {
@@ -428,6 +440,12 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
         monthsReduced,
         percentageSavings: roundCurrency(percentageSavings),
         resultingLoan: {
+            emi: roundCurrency(baseLoan.emi),
+            totalInterest: roundCurrency(reduceTenureTotalInterest),
+            totalPayment: roundCurrency(baseLoan.principal + reduceTenureTotalInterest),
+            totalMonths: reduceTenureTotalMonths
+        },
+        reduceEmiLoan: {
             emi: roundCurrency(newEmi),
             totalInterest: roundCurrency(totalInterestWithWhatIf),
             totalPayment: roundCurrency(baseLoan.principal + totalInterestWithWhatIf),
