@@ -44,6 +44,46 @@ function normalizeRupees(value) {
     return Math.max(0, Math.round(Number(value) || 0));
 }
 
+function sanitizeCount(value) {
+    const normalized = Math.round(Number(value) || 0);
+    return Number.isFinite(normalized) ? Math.max(0, normalized) : 0;
+}
+
+function createClosedLoanScenario(interestPaidBefore, elapsedMonths) {
+    return {
+        emi: 0,
+        totalInterest: roundCurrency(interestPaidBefore),
+        totalPayment: roundCurrency(interestPaidBefore),
+        totalMonths: sanitizeCount(elapsedMonths)
+    };
+}
+
+function createNearClosureScenario(newPrincipal, currentEmi, interestPaidBefore, currentMonth, baselineMonths, baselineInterest, loanStartDate, monthlyRate) {
+    const safeEmi = roundCurrency(currentEmi);
+    const monthsToClose = Math.max(1, sanitizeCount(Math.ceil(newPrincipal / Math.max(safeEmi, 1))));
+    const schedule = generateAmortizationSchedule(
+        newPrincipal,
+        monthlyRate,
+        safeEmi,
+        monthsToClose,
+        loanStartDate
+    );
+    const futureInterest = schedule.reduce((sum, entry) => sum + entry.interestComponent, 0);
+    const totalInterest = roundCurrency(interestPaidBefore + futureInterest);
+    const totalMonths = sanitizeCount(currentMonth + schedule.length);
+
+    return {
+        emi: safeEmi,
+        totalInterest,
+        totalPayment: roundCurrency(newPrincipal + totalInterest),
+        totalMonths,
+        interestSaved: roundCurrency(Math.max(0, baselineInterest - totalInterest)),
+        monthsSaved: Math.max(0, sanitizeCount(baselineMonths) - totalMonths),
+        emiReduction: 0,
+        monthsToClose
+    };
+}
+
 export function recalculateTenure(principal, monthlyRate, emi, maxMonths = 1200) {
     const normalizedPrincipal = normalizeRupees(principal);
     if (normalizedPrincipal <= 0 || emi <= 0) {
@@ -200,20 +240,17 @@ function buildPrepaymentScenario(baseSchedule, prepayments, loanDetails, strateg
 
         while (prepaymentIndex < sortedPrepayments.length && sortedPrepayments[prepaymentIndex].date <= scheduleEntryDate) {
             const requestedPrepaymentAmount = normalizeRupees(sortedPrepayments[prepaymentIndex].amount);
-
-            if (requestedPrepaymentAmount > currentBalance + 0.01) {
-                throw new Error(`Prepayment on ${sortedPrepayments[prepaymentIndex].date.toISOString().split('T')[0]} exceeds the outstanding balance.`);
-            }
-
-            const appliedPrepaymentAmount = requestedPrepaymentAmount;
+            const appliedPrepaymentAmount = roundCurrency(Math.min(requestedPrepaymentAmount, currentBalance));
             currentBalance = roundCurrency(Math.max(0, currentBalance - appliedPrepaymentAmount));
             cumulativePrincipalPaid += appliedPrepaymentAmount;
             totalPrepaymentThisMonth += appliedPrepaymentAmount;
             prepaymentEvents.push({
+                requestedAmount: requestedPrepaymentAmount,
                 amount: appliedPrepaymentAmount,
                 date: new Date(sortedPrepayments[prepaymentIndex].date),
                 balanceAfterPrepayment: currentBalance,
                 month: monthCounter,
+                wasCapped: requestedPrepaymentAmount > appliedPrepaymentAmount,
                 remainingMonths: Math.max(1, originalTenureMonths - monthCounter + 1)
             });
             prepaymentIndex++;
@@ -238,16 +275,6 @@ function buildPrepaymentScenario(baseSchedule, prepayments, loanDetails, strateg
         if (strategy === 'reduce-emi' && totalPrepaymentThisMonth > 0) {
             const remainingMonths = Math.max(1, originalTenureMonths - monthCounter + 1);
             currentEmi = calculateEMI(currentBalance, monthlyRate, remainingMonths);
-
-            if (scheduledEmi > 0 && currentEmi < scheduledEmi * 0.8) {
-                console.error('Invalid EMI calculation', {
-                    scheduledEmi,
-                    currentEmi,
-                    strategy,
-                    currentBalance
-                });
-                throw new Error('Invalid EMI calculation');
-            }
         }
 
         const interestComponent = currentBalance * monthlyRate;
@@ -284,7 +311,7 @@ function buildPrepaymentScenario(baseSchedule, prepayments, loanDetails, strateg
 
     return {
         modifiedSchedule,
-        finalEmi: strategy === 'reduce-emi' ? roundCurrency(currentEmi) : roundCurrency(scheduledEmi),
+        finalEmi: currentBalance <= 0 ? 0 : (strategy === 'reduce-emi' ? roundCurrency(currentEmi) : roundCurrency(scheduledEmi)),
         finalTotalInterest: roundCurrency(finalTotalInterest),
         finalTotalMonths,
         prepaymentEvents
@@ -400,12 +427,81 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
 
     const previousEntry = baseSchedule[remainingEntry.month - 2] || null;
     const interestPaidBefore = previousEntry ? previousEntry.cumulativeInterestPaid : 0;
-    const remainingMonths = baseLoan.totalMonths - (remainingEntry.month - 1);
+    const currentMonth = remainingEntry.month - 1;
+    const remainingMonths = Math.max(1, baseLoan.totalMonths - currentMonth);
     const balanceBeforePrepayment = previousEntry ? previousEntry.closingBalance : remainingEntry.openingBalance;
-    const remainingPrincipal = Math.max(0, normalizeRupees(balanceBeforePrepayment) - normalizedAmount);
+    const remainingPrincipalBeforePrepayment = normalizeRupees(balanceBeforePrepayment);
+    const appliedAmount = Math.min(normalizedAmount, remainingPrincipalBeforePrepayment);
+    const remainingPrincipal = Math.max(0, remainingPrincipalBeforePrepayment - appliedAmount);
+    const baselineInterest = roundCurrency(baseLoan.totalInterest);
+    const baselineMonths = sanitizeCount(baseLoan.totalMonths);
+    const currentEmi = roundCurrency(baseLoan.emi);
 
-    if (remainingPrincipal >= normalizeRupees(balanceBeforePrepayment)) {
+    if (remainingPrincipal >= remainingPrincipalBeforePrepayment) {
         return null;
+    }
+
+    if (remainingPrincipal <= 0) {
+        const closedScenario = createClosedLoanScenario(interestPaidBefore, currentMonth);
+        const interestSaved = roundCurrency(Math.max(0, baselineInterest - closedScenario.totalInterest));
+        const monthsReduced = Math.max(0, baselineMonths - closedScenario.totalMonths);
+
+        return {
+            amount: appliedAmount,
+            requestedAmount: normalizedAmount,
+            remainingPrincipalAfterPrepayment: 0,
+            date: hypotheticalDate,
+            interestSaved,
+            monthsReduced,
+            percentageSavings: roundCurrency(baselineInterest > 0 ? (interestSaved / baselineInterest) * 100 : 0),
+            message: 'Loan fully closed with this prepayment.',
+            status: 'closed',
+            comparisonScenarios: {
+                reduceTenure: {
+                    ...closedScenario,
+                    interestSaved,
+                    monthsReduced
+                },
+                reduceEmi: {
+                    ...closedScenario,
+                    interestSaved,
+                    monthsReduced
+                }
+            },
+            resultingLoan: closedScenario,
+            reduceEmiLoan: closedScenario
+        };
+    }
+
+    if (remainingPrincipal <= currentEmi) {
+        const nearClosureScenario = createNearClosureScenario(
+            remainingPrincipal,
+            currentEmi,
+            interestPaidBefore,
+            currentMonth,
+            baselineMonths,
+            baselineInterest,
+            hypotheticalDate,
+            monthlyRate
+        );
+
+        return {
+            amount: appliedAmount,
+            requestedAmount: normalizedAmount,
+            remainingPrincipalAfterPrepayment: roundCurrency(remainingPrincipal),
+            date: hypotheticalDate,
+            interestSaved: roundCurrency(nearClosureScenario.interestSaved),
+            monthsReduced: Math.max(0, baselineMonths - nearClosureScenario.totalMonths),
+            percentageSavings: roundCurrency(baselineInterest > 0 ? (nearClosureScenario.interestSaved / baselineInterest) * 100 : 0),
+            message: `Loan closes in ${nearClosureScenario.monthsToClose} month${nearClosureScenario.monthsToClose === 1 ? '' : 's'}.`,
+            status: 'near-closure',
+            comparisonScenarios: {
+                reduceTenure: nearClosureScenario,
+                reduceEmi: nearClosureScenario
+            },
+            resultingLoan: nearClosureScenario,
+            reduceEmiLoan: nearClosureScenario
+        };
     }
 
     const reduceTenureMonths = recalculateTenure(remainingPrincipal, monthlyRate, baseLoan.emi);
@@ -421,15 +517,6 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
     const reduceTenureTotalMonths = (remainingEntry.month - 1) + reduceTenureSchedule.length;
 
     const newEmi = calculateEMI(remainingPrincipal, monthlyRate, remainingMonths);
-    if (baseLoan.emi > 0 && newEmi < baseLoan.emi * 0.8) {
-        console.error('Invalid EMI calculation', {
-            baseEmi: baseLoan.emi,
-            newEmi,
-            remainingPrincipal,
-            remainingMonths
-        });
-        throw new Error('Invalid EMI calculation');
-    }
     const reduceEmiSchedule = generateAmortizationSchedule(
         remainingPrincipal,
         monthlyRate,
@@ -446,11 +533,15 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
     const percentageSavings = baseLoan.totalInterest > 0 ? (interestSaved / baseLoan.totalInterest * 100) : 0;
 
     return {
-        amount: normalizedAmount,
+        amount: appliedAmount,
+        requestedAmount: normalizedAmount,
+        remainingPrincipalAfterPrepayment: roundCurrency(remainingPrincipal),
         date: hypotheticalDate,
-        interestSaved: roundCurrency(interestSaved),
-        monthsReduced,
+        interestSaved: roundCurrency(Math.max(0, interestSaved)),
+        monthsReduced: Math.max(0, monthsReduced),
         percentageSavings: roundCurrency(percentageSavings),
+        message: `Remaining principal after prepayment: ${formatAdvisorCurrency(remainingPrincipal)}.`,
+        status: 'normal',
         comparisonScenarios: {
             reduceTenure: {
                 emi: roundCurrency(baseLoan.emi),
@@ -514,17 +605,103 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
         };
     }
 
-    if (normalizedAmount > remainingPrincipal) {
+    const appliedAmount = Math.min(normalizedAmount, remainingPrincipal);
+    const newPrincipal = roundCurrency(Math.max(0, remainingPrincipal - appliedAmount));
+    const currentEmi = roundCurrency(baseLoan.emi);
+    const baselineInterest = roundCurrency(baseLoan.totalInterest);
+    const baselineMonths = sanitizeCount(baseLoan.totalMonths);
+
+    if (newPrincipal <= 0) {
+        const closedScenario = createClosedLoanScenario(interestPaidBefore, currentMonth);
+        const interestSaved = roundCurrency(Math.max(0, baselineInterest - closedScenario.totalInterest));
+
         return {
-            isValid: false,
-            error: `Prepayment cannot exceed the remaining principal of ${formatAdvisorCurrency(remainingPrincipal)} on ${hypotheticalDate.toISOString().split('T')[0]}.`
+            isValid: true,
+            sourceDate: hypotheticalDate,
+            sourceAmount: appliedAmount,
+            requestedAmount: normalizedAmount,
+            message: normalizedAmount > remainingPrincipal
+                ? 'Requested prepayment was capped to the remaining principal. Loan fully closed with this prepayment.'
+                : 'Loan fully closed with this prepayment.',
+            currentState: {
+                remainingPrincipal,
+                currentEmi,
+                remainingMonths,
+                monthlyInterestRate: monthlyRate,
+                currentMonth,
+                totalMonths: baselineMonths,
+                cappedAmount: roundCurrency(appliedAmount),
+                remainingPrincipalAfterPrepayment: 0
+            },
+            scenarios: {
+                current: {
+                    emi: currentEmi,
+                    totalInterest: baselineInterest,
+                    totalMonths: baselineMonths
+                },
+                reduceTenure: {
+                    ...closedScenario,
+                    interestSaved,
+                    monthsSaved: Math.max(0, baselineMonths - closedScenario.totalMonths),
+                    emiReduction: currentEmi
+                },
+                reduceEmi: {
+                    ...closedScenario,
+                    interestSaved,
+                    monthsSaved: Math.max(0, baselineMonths - closedScenario.totalMonths),
+                    emiReduction: currentEmi
+                }
+            },
+            recommendation: 'Loan Closed',
+            recommendationMessage: 'Recommendation: This prepayment pays off the loan in full.',
+            timingInsight: 'No future EMI remains after this prepayment.',
+            helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(0)}.`
         };
     }
 
-    const newPrincipal = roundCurrency(Math.max(0, remainingPrincipal - normalizedAmount));
-    const currentEmi = roundCurrency(baseLoan.emi);
-    const baselineInterest = roundCurrency(baseLoan.totalInterest);
-    const baselineMonths = baseLoan.totalMonths;
+    if (newPrincipal <= currentEmi) {
+        const nearClosureScenario = createNearClosureScenario(
+            newPrincipal,
+            currentEmi,
+            interestPaidBefore,
+            currentMonth,
+            baselineMonths,
+            baselineInterest,
+            hypotheticalDate,
+            monthlyRate
+        );
+
+        return {
+            isValid: true,
+            sourceDate: hypotheticalDate,
+            sourceAmount: appliedAmount,
+            requestedAmount: normalizedAmount,
+            message: `Loan closes in ${nearClosureScenario.monthsToClose} month${nearClosureScenario.monthsToClose === 1 ? '' : 's'}.`,
+            currentState: {
+                remainingPrincipal,
+                currentEmi,
+                remainingMonths,
+                monthlyInterestRate: monthlyRate,
+                currentMonth,
+                totalMonths: baselineMonths,
+                cappedAmount: roundCurrency(appliedAmount),
+                remainingPrincipalAfterPrepayment: roundCurrency(newPrincipal)
+            },
+            scenarios: {
+                current: {
+                    emi: currentEmi,
+                    totalInterest: baselineInterest,
+                    totalMonths: baselineMonths
+                },
+                reduceTenure: nearClosureScenario,
+                reduceEmi: nearClosureScenario
+            },
+            recommendation: 'Reduce Tenure',
+            recommendationMessage: 'Recommendation: Keep the EMI unchanged and let the loan close in the next few months.',
+            timingInsight: 'Near closure - this prepayment wipes out most of the remaining balance.',
+            helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(newPrincipal)}.`
+        };
+    }
 
     const newTenureMonths = recalculateTenure(newPrincipal, monthlyRate, currentEmi);
     const reduceTenureSchedule = generateAmortizationSchedule(
@@ -541,19 +718,6 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
     const reduceTenureMonthsSaved = Math.max(0, baselineMonths - reduceTenureTotalMonths);
 
     const reduceEmi = calculateEMI(newPrincipal, monthlyRate, remainingMonths);
-    if (currentEmi > 0 && reduceEmi < currentEmi * 0.8) {
-        console.error('Invalid EMI calculation', {
-            currentEmi,
-            reduceEmi,
-            newPrincipal,
-            remainingMonths
-        });
-        return {
-            isValid: false,
-            error: 'Invalid EMI calculation'
-        };
-    }
-
     const reduceEmiSchedule = generateAmortizationSchedule(
         newPrincipal,
         monthlyRate,
@@ -586,14 +750,20 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
     return {
         isValid: true,
         sourceDate: hypotheticalDate,
-        sourceAmount: normalizedAmount,
+        sourceAmount: appliedAmount,
+        requestedAmount: normalizedAmount,
+        message: normalizedAmount > remainingPrincipal
+            ? `Requested prepayment was capped at ${formatAdvisorCurrency(remainingPrincipal)}.`
+            : `Remaining principal after prepayment: ${formatAdvisorCurrency(newPrincipal)}.`,
         currentState: {
             remainingPrincipal,
             currentEmi,
             remainingMonths,
             monthlyInterestRate: monthlyRate,
             currentMonth,
-            totalMonths: baselineMonths
+            totalMonths: baselineMonths,
+            cappedAmount: roundCurrency(appliedAmount),
+            remainingPrincipalAfterPrepayment: roundCurrency(newPrincipal)
         },
         scenarios: {
             current: {
@@ -621,7 +791,7 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
         recommendation,
         recommendationMessage,
         timingInsight: timingLabel,
-        helperText: 'Earlier prepayments save more interest.'
+        helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(newPrincipal)}. Earlier prepayments save more interest.`
     };
 }
 
