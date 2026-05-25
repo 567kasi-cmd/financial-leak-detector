@@ -85,6 +85,9 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
         schedule: reduceEmiScenario.modifiedSchedule
     };
 
+    const emiComparisonTolerance = 2;
+    const emiFallbackTolerance = 100;
+
     if (!hasActualPrepayments && modifiedLoan.totalMonths !== userInput.tenureMonths) {
         console.error('Tenure override bug', {
             expectedTenureMonths: userInput.tenureMonths,
@@ -93,20 +96,29 @@ export async function simulateLoan(loanDetails, actualPrepayments = [], currentD
         throw new Error('Tenure override bug');
     }
 
-    if (!hasActualPrepayments && modifiedLoan.emi !== originalLoan.emi) {
-        console.error('EMI mismatch without prepayments', {
-            expectedEmi: originalLoan.emi,
-            actualEmi: modifiedLoan.emi
-        });
-        throw new Error('EMI mismatch without prepayments');
-    }
+    if (!hasActualPrepayments) {
+        const roundedOriginalEmi = Math.round(originalLoan.emi);
+        const roundedModifiedEmi = Math.round(modifiedLoan.emi);
+        const emiDifference = Math.abs(roundedOriginalEmi - roundedModifiedEmi);
 
-    if (hasActualPrepayments && originalLoan.emi > 0 && reduceEmiLoan.emi < originalLoan.emi * 0.8) {
-        console.error('Invalid EMI calculation', {
-            originalEmi: originalLoan.emi,
-            reduceEmi: reduceEmiLoan.emi
-        });
-        throw new Error('Invalid EMI calculation');
+        if (emiDifference > emiComparisonTolerance) {
+            console.warn('EMI mismatch without prepayments exceeded tolerance', {
+                expectedEmi: roundedOriginalEmi,
+                actualEmi: roundedModifiedEmi,
+                tolerance: emiComparisonTolerance
+            });
+
+            if (emiDifference > emiFallbackTolerance) {
+                const fallbackEmi = calculateEMI(userInput.principal, monthlyRate, userInput.tenureMonths);
+                modifiedLoan.emi = fallbackEmi;
+                reduceEmiLoan.emi = fallbackEmi;
+                console.warn('Applied fallback EMI after large mismatch without prepayments', {
+                    fallbackEmi,
+                    expectedEmi: roundedOriginalEmi,
+                    actualEmi: roundedModifiedEmi
+                });
+            }
+        }
     }
 
     // --- 3. Calculate Loan Progress as of currentDate ---

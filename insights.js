@@ -154,9 +154,18 @@ export function generateEnhancedInsights(simulationResults) {
             type: 'info',
             icon: 'i',
             title: 'Useful what-if scenario',
-            message: `A prepayment of ${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} can save ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)}.`,
+            message: `A prepayment of ${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} can save ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} in remaining interest.`,
             action: 'Use this as a target for bonus, windfall, or annual savings planning.'
         });
+        if (hypotheticalPrepaymentImpact.status === 'near-closure') {
+            insights.push({
+                type: 'success',
+                icon: '+',
+                title: 'Near loan closure',
+                message: 'This scenario leaves only a final payment-sized balance, so the loan can close almost immediately.',
+                action: 'Keep the EMI unchanged rather than switching to a reduce-EMI plan at this stage.'
+            });
+        }
     }
 
     if (loanProgress.remainingBalance <= 0.01) {
@@ -196,13 +205,23 @@ export function generateEnhancedInsights(simulationResults) {
     }
 
     if (breakEvenMonth !== null && breakEvenMonth !== undefined) {
-        insights.push({
-            type: 'info',
-            icon: 'i',
-            title: 'Principal-over-interest crossover',
-            message: `Principal paid overtakes cumulative interest around month ${breakEvenMonth}.`,
-            action: 'Prepayments before this point usually deliver the highest marginal interest savings.'
-        });
+        if (totalMonths <= 12) {
+            insights.push({
+                type: 'info',
+                icon: 'i',
+                title: 'Short-term loan pattern',
+                message: 'Since this is a short-term loan, a larger portion of your EMI goes toward principal early on.',
+                action: 'Prepayments can still help, but much of each EMI is already reducing principal from the start.'
+            });
+        } else {
+            insights.push({
+                type: 'info',
+                icon: 'i',
+                title: 'Principal-over-interest crossover',
+                message: `Principal paid overtakes cumulative interest around month ${breakEvenMonth}.`,
+                action: 'Prepayments before this point usually deliver the highest marginal interest savings.'
+            });
+        }
     }
 
     if (insights.length === 0) {
