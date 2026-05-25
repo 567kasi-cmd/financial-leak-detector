@@ -171,6 +171,123 @@ body {
     font-size: 1.3rem;
 }
 
+.emi-spotlight-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid transparent;
+    background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(135deg, #f39c12, #f7dc6f, #3498db) border-box;
+    box-shadow: 0 14px 28px rgba(44, 62, 80, 0.12), 0 0 0 1px rgba(243, 156, 18, 0.08);
+}
+
+.emi-spotlight-card::after {
+    content: "";
+    position: absolute;
+    top: -30px;
+    right: -10px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(243, 156, 18, 0.18), transparent 70%);
+    pointer-events: none;
+}
+
+.emi-card-badge-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.emi-card-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(135deg, #ff7a18, #ffb347);
+    box-shadow: 0 10px 24px rgba(255, 122, 24, 0.28);
+}
+
+.emi-card-badge-alt {
+    color: #1f3b57;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    box-shadow: none;
+}
+
+.emi-hook-box {
+    display: grid;
+    gap: 0.35rem;
+    margin: 1rem 0 1.15rem;
+    padding: 1rem 1.1rem;
+    border-left: 4px solid #f39c12;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(52, 152, 219, 0.08));
+    color: #29465f;
+}
+
+.emi-hook-box strong {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.emi-hook-box span {
+    font-size: 0.92rem;
+}
+
+.emi-trust-list {
+    display: grid;
+    gap: 0.45rem;
+    margin-bottom: 1.15rem;
+    color: #4a6379;
+    font-size: 0.92rem;
+}
+
+.emi-trust-list span::before {
+    content: "\2714";
+    color: var(--success);
+    font-weight: 700;
+    margin-right: 0.5rem;
+}
+
+.emi-cta-wrap {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.emi-cta-btn {
+    justify-content: center;
+    box-shadow: 0 12px 24px rgba(52, 152, 219, 0.15);
+    animation: emiCtaPulse 2.2s ease-in-out infinite;
+}
+
+.emi-cta-btn:hover,
+.emi-cta-btn:focus-visible {
+    background: linear-gradient(135deg, #eaf6ff, #fff8ea);
+    box-shadow: 0 16px 32px rgba(243, 156, 18, 0.22);
+}
+
+.emi-cta-note {
+    margin: 0;
+    font-weight: 700;
+    color: #d35400;
+}
+
+@keyframes emiCtaPulse {
+    0%, 100% {
+        transform: translateY(0);
+        box-shadow: 0 12px 24px rgba(52, 152, 219, 0.15);
+    }
+    50% {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 32px rgba(243, 156, 18, 0.24);
+    }
+}
+
 
 .input-card {
     grid-column: span 1;
@@ -640,6 +757,10 @@ article li {
 
     .faq-grid {
         grid-template-columns: 1fr;
+    }
+
+    .emi-card-badge {
+        font-size: 0.72rem;
     }
 }
 
