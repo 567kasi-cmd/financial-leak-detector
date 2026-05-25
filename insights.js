@@ -154,9 +154,18 @@ export function generateEnhancedInsights(simulationResults) {
             type: 'info',
             icon: 'i',
             title: 'Useful what-if scenario',
-            message: `A prepayment of ${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} can save ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)}.`,
+            message: `A prepayment of ${formatCurrency(hypotheticalPrepaymentImpact.amount)} on ${formatDate(hypotheticalPrepaymentImpact.date)} can save ${formatCurrency(hypotheticalPrepaymentImpact.interestSaved)} in remaining interest.`,
             action: 'Use this as a target for bonus, windfall, or annual savings planning.'
         });
+        if (hypotheticalPrepaymentImpact.status === 'near-closure') {
+            insights.push({
+                type: 'success',
+                icon: '+',
+                title: 'Near loan closure',
+                message: 'This scenario leaves only a final payment-sized balance, so the loan can close almost immediately.',
+                action: 'Keep the EMI unchanged rather than switching to a reduce-EMI plan at this stage.'
+            });
+        }
     }
 
     if (loanProgress.remainingBalance <= 0.01) {

@@ -54,13 +54,16 @@ function createClosedLoanScenario(interestPaidBefore, elapsedMonths) {
         emi: 0,
         totalInterest: roundCurrency(interestPaidBefore),
         totalPayment: roundCurrency(interestPaidBefore),
-        totalMonths: sanitizeCount(elapsedMonths)
+        totalMonths: sanitizeCount(elapsedMonths),
+        displayMonths: 0,
+        finalPayment: 0,
+        reduceEmiApplicable: false
     };
 }
 
 function createNearClosureScenario(newPrincipal, currentEmi, interestPaidBefore, currentMonth, baselineMonths, baselineInterest, loanStartDate, monthlyRate) {
     const safeEmi = roundCurrency(currentEmi);
-    const monthsToClose = Math.max(1, sanitizeCount(Math.ceil(newPrincipal / Math.max(safeEmi, 1))));
+    const monthsToClose = 1;
     const schedule = generateAmortizationSchedule(
         newPrincipal,
         monthlyRate,
@@ -77,10 +80,13 @@ function createNearClosureScenario(newPrincipal, currentEmi, interestPaidBefore,
         totalInterest,
         totalPayment: roundCurrency(newPrincipal + totalInterest),
         totalMonths,
+        displayMonths: monthsToClose,
         interestSaved: roundCurrency(Math.max(0, baselineInterest - totalInterest)),
         monthsSaved: Math.max(0, sanitizeCount(baselineMonths) - totalMonths),
         emiReduction: 0,
-        monthsToClose
+        monthsToClose,
+        finalPayment: roundCurrency(schedule[schedule.length - 1]?.emi || 0),
+        reduceEmiApplicable: false
     };
 }
 
@@ -450,12 +456,15 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
             amount: appliedAmount,
             requestedAmount: normalizedAmount,
             remainingPrincipalAfterPrepayment: 0,
+            displayCurrentMonths: remainingMonths,
             date: hypotheticalDate,
             interestSaved,
             monthsReduced,
             percentageSavings: roundCurrency(baselineInterest > 0 ? (interestSaved / baselineInterest) * 100 : 0),
             message: 'Loan fully closed with this prepayment.',
             status: 'closed',
+            reduceEmiApplicable: false,
+            reduceEmiDisabledMessage: 'Reduce EMI is not applicable as the loan will close immediately.',
             comparisonScenarios: {
                 reduceTenure: {
                     ...closedScenario,
@@ -489,12 +498,15 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
             amount: appliedAmount,
             requestedAmount: normalizedAmount,
             remainingPrincipalAfterPrepayment: roundCurrency(remainingPrincipal),
+            displayCurrentMonths: remainingMonths,
             date: hypotheticalDate,
             interestSaved: roundCurrency(nearClosureScenario.interestSaved),
             monthsReduced: Math.max(0, baselineMonths - nearClosureScenario.totalMonths),
             percentageSavings: roundCurrency(baselineInterest > 0 ? (nearClosureScenario.interestSaved / baselineInterest) * 100 : 0),
             message: `Loan closes in ${nearClosureScenario.monthsToClose} month${nearClosureScenario.monthsToClose === 1 ? '' : 's'}.`,
             status: 'near-closure',
+            reduceEmiApplicable: false,
+            reduceEmiDisabledMessage: 'Reduce EMI is not applicable as the loan will close immediately.',
             comparisonScenarios: {
                 reduceTenure: nearClosureScenario,
                 reduceEmi: nearClosureScenario
@@ -536,41 +548,53 @@ export function calculateHypotheticalPrepaymentImpact(baseLoan, hypotheticalPrep
         amount: appliedAmount,
         requestedAmount: normalizedAmount,
         remainingPrincipalAfterPrepayment: roundCurrency(remainingPrincipal),
+        displayCurrentMonths: remainingMonths,
         date: hypotheticalDate,
         interestSaved: roundCurrency(Math.max(0, interestSaved)),
         monthsReduced: Math.max(0, monthsReduced),
         percentageSavings: roundCurrency(percentageSavings),
         message: `Remaining principal after prepayment: ${formatAdvisorCurrency(remainingPrincipal)}.`,
         status: 'normal',
+        reduceEmiApplicable: true,
         comparisonScenarios: {
             reduceTenure: {
                 emi: roundCurrency(baseLoan.emi),
                 totalInterest: roundCurrency(reduceTenureTotalInterest),
                 totalPayment: roundCurrency(baseLoan.principal + reduceTenureTotalInterest),
                 totalMonths: reduceTenureTotalMonths,
+                displayMonths: reduceTenureSchedule.length,
                 interestSaved: roundCurrency(baseLoan.totalInterest - reduceTenureTotalInterest),
-                monthsReduced: Math.max(0, baseLoan.totalMonths - reduceTenureTotalMonths)
+                monthsReduced: Math.max(0, baseLoan.totalMonths - reduceTenureTotalMonths),
+                finalPayment: roundCurrency(reduceTenureSchedule[reduceTenureSchedule.length - 1]?.emi || 0),
+                reduceEmiApplicable: true
             },
             reduceEmi: {
                 emi: roundCurrency(newEmi),
                 totalInterest: roundCurrency(totalInterestWithWhatIf),
                 totalPayment: roundCurrency(baseLoan.principal + totalInterestWithWhatIf),
                 totalMonths: totalMonthsWithWhatIf,
+                displayMonths: reduceEmiSchedule.length,
                 interestSaved: roundCurrency(baseLoan.totalInterest - totalInterestWithWhatIf),
-                monthsReduced: Math.max(0, baseLoan.totalMonths - totalMonthsWithWhatIf)
+                monthsReduced: Math.max(0, baseLoan.totalMonths - totalMonthsWithWhatIf),
+                finalPayment: roundCurrency(reduceEmiSchedule[reduceEmiSchedule.length - 1]?.emi || 0),
+                reduceEmiApplicable: true
             }
         },
         resultingLoan: {
             emi: roundCurrency(baseLoan.emi),
             totalInterest: roundCurrency(reduceTenureTotalInterest),
             totalPayment: roundCurrency(baseLoan.principal + reduceTenureTotalInterest),
-            totalMonths: reduceTenureTotalMonths
+            totalMonths: reduceTenureTotalMonths,
+            displayMonths: reduceTenureSchedule.length,
+            finalPayment: roundCurrency(reduceTenureSchedule[reduceTenureSchedule.length - 1]?.emi || 0)
         },
         reduceEmiLoan: {
             emi: roundCurrency(newEmi),
             totalInterest: roundCurrency(totalInterestWithWhatIf),
             totalPayment: roundCurrency(baseLoan.principal + totalInterestWithWhatIf),
-            totalMonths: totalMonthsWithWhatIf
+            totalMonths: totalMonthsWithWhatIf,
+            displayMonths: reduceEmiSchedule.length,
+            finalPayment: roundCurrency(reduceEmiSchedule[reduceEmiSchedule.length - 1]?.emi || 0)
         }
     };
 }
@@ -637,7 +661,8 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
                 current: {
                     emi: currentEmi,
                     totalInterest: baselineInterest,
-                    totalMonths: baselineMonths
+                    totalMonths: baselineMonths,
+                    displayMonths: remainingMonths
                 },
                 reduceTenure: {
                     ...closedScenario,
@@ -652,6 +677,8 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
                     emiReduction: currentEmi
                 }
             },
+            reduceEmiApplicable: false,
+            reduceEmiDisabledMessage: 'Reduce EMI is not applicable as the loan will close immediately.',
             recommendation: 'Loan Closed',
             recommendationMessage: 'Recommendation: This prepayment pays off the loan in full.',
             timingInsight: 'No future EMI remains after this prepayment.',
@@ -691,15 +718,18 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
                 current: {
                     emi: currentEmi,
                     totalInterest: baselineInterest,
-                    totalMonths: baselineMonths
+                    totalMonths: baselineMonths,
+                    displayMonths: remainingMonths
                 },
                 reduceTenure: nearClosureScenario,
                 reduceEmi: nearClosureScenario
             },
+            reduceEmiApplicable: false,
+            reduceEmiDisabledMessage: 'Reduce EMI is not applicable as the loan will close immediately.',
             recommendation: 'Reduce Tenure',
             recommendationMessage: 'Recommendation: Keep the EMI unchanged and let the loan close in the next few months.',
             timingInsight: 'This prepayment significantly reduces your loan. If you choose tenure reduction, your loan may close within a few months.',
-            helperText: 'Near closure scenarios usually benefit more from keeping the EMI unchanged and finishing the loan quickly.'
+            helperText: `Final payment: ${formatAdvisorCurrency(nearClosureScenario.finalPayment)} instead of the regular EMI.`
         };
     }
 
@@ -769,25 +799,33 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
             current: {
                 emi: currentEmi,
                 totalInterest: baselineInterest,
-                totalMonths: baselineMonths
+                totalMonths: baselineMonths,
+                displayMonths: remainingMonths
             },
             reduceTenure: {
                 emi: currentEmi,
                 totalInterest: reduceTenureTotalInterest,
                 totalMonths: reduceTenureTotalMonths,
+                displayMonths: reduceTenureSchedule.length,
                 interestSaved: reduceTenureInterestSaved,
                 monthsSaved: reduceTenureMonthsSaved,
-                emiReduction: 0
+                emiReduction: 0,
+                finalPayment: roundCurrency(reduceTenureSchedule[reduceTenureSchedule.length - 1]?.emi || 0),
+                reduceEmiApplicable: true
             },
             reduceEmi: {
                 emi: roundCurrency(reduceEmi),
                 totalInterest: reduceEmiTotalInterest,
                 totalMonths: reduceEmiTotalMonths,
+                displayMonths: reduceEmiSchedule.length,
                 interestSaved: reduceEmiInterestSaved,
                 monthsSaved: Math.max(0, baselineMonths - reduceEmiTotalMonths),
-                emiReduction
+                emiReduction,
+                finalPayment: roundCurrency(reduceEmiSchedule[reduceEmiSchedule.length - 1]?.emi || 0),
+                reduceEmiApplicable: true
             }
         },
+        reduceEmiApplicable: true,
         recommendation,
         recommendationMessage,
         timingInsight: timingLabel,
