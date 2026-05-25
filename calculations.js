@@ -655,7 +655,7 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
             recommendation: 'Loan Closed',
             recommendationMessage: 'Recommendation: This prepayment pays off the loan in full.',
             timingInsight: 'No future EMI remains after this prepayment.',
-            helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(0)}.`
+            helperText: 'This prepayment fully closes the loan, so no further EMI is due.'
         };
     }
 
@@ -698,8 +698,8 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
             },
             recommendation: 'Reduce Tenure',
             recommendationMessage: 'Recommendation: Keep the EMI unchanged and let the loan close in the next few months.',
-            timingInsight: 'Near closure - this prepayment wipes out most of the remaining balance.',
-            helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(newPrincipal)}.`
+            timingInsight: 'This prepayment significantly reduces your loan. If you choose tenure reduction, your loan may close within a few months.',
+            helperText: 'Near closure scenarios usually benefit more from keeping the EMI unchanged and finishing the loan quickly.'
         };
     }
 
@@ -791,7 +791,7 @@ export function calculateSmartPrepaymentAdvisor(baseLoan, hypotheticalPrepayment
         recommendation,
         recommendationMessage,
         timingInsight: timingLabel,
-        helperText: `Remaining principal after prepayment: ${formatAdvisorCurrency(newPrincipal)}. Earlier prepayments save more interest.`
+        helperText: 'Earlier prepayments save more interest.'
     };
 }
 

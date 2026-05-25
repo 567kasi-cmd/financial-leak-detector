@@ -196,13 +196,23 @@ export function generateEnhancedInsights(simulationResults) {
     }
 
     if (breakEvenMonth !== null && breakEvenMonth !== undefined) {
-        insights.push({
-            type: 'info',
-            icon: 'i',
-            title: 'Principal-over-interest crossover',
-            message: `Principal paid overtakes cumulative interest around month ${breakEvenMonth}.`,
-            action: 'Prepayments before this point usually deliver the highest marginal interest savings.'
-        });
+        if (totalMonths <= 12) {
+            insights.push({
+                type: 'info',
+                icon: 'i',
+                title: 'Short-term loan pattern',
+                message: 'Since this is a short-term loan, a larger portion of your EMI goes toward principal early on.',
+                action: 'Prepayments can still help, but much of each EMI is already reducing principal from the start.'
+            });
+        } else {
+            insights.push({
+                type: 'info',
+                icon: 'i',
+                title: 'Principal-over-interest crossover',
+                message: `Principal paid overtakes cumulative interest around month ${breakEvenMonth}.`,
+                action: 'Prepayments before this point usually deliver the highest marginal interest savings.'
+            });
+        }
     }
 
     if (insights.length === 0) {
