@@ -96,6 +96,22 @@ body {
     flex-wrap: wrap;
 }
 
+.hero-proof-strip {
+    display: flex;
+    justify-content: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-top: 1.4rem;
+}
+
+.hero-proof-strip span {
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 0.92rem;
+}
+
 /* Container & Grid */
 .container {
     max-width: 1200px;
@@ -239,6 +255,52 @@ body {
     font-size: 0.92rem;
 }
 
+.emi-quick-actions {
+    margin-bottom: 1rem;
+}
+
+.emi-quick-title {
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+    color: #1f3b57;
+}
+
+.emi-quick-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.emi-demo-btn {
+    flex: 1 1 180px;
+    justify-content: center;
+}
+
+.emi-before-after {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0 0 1.15rem;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    background: #f8fbfe;
+    border: 1px solid rgba(52, 152, 219, 0.18);
+}
+
+.emi-before-after-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    color: #35516b;
+}
+
+.emi-before-after-save {
+    padding-top: 0.25rem;
+    border-top: 1px dashed rgba(52, 152, 219, 0.22);
+    font-weight: 800;
+    color: #1f7a45;
+}
+
 .emi-trust-list {
     display: grid;
     gap: 0.45rem;
@@ -275,6 +337,42 @@ body {
     margin: 0;
     font-weight: 700;
     color: #d35400;
+}
+
+.emi-curiosity-list {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 1rem;
+    color: #6a4a0a;
+    font-weight: 600;
+}
+
+.emi-curiosity-list p {
+    margin: 0;
+}
+
+.floating-emi-cta {
+    position: fixed;
+    right: 1.2rem;
+    bottom: 1.2rem;
+    z-index: 120;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.95rem 1.15rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ff7a18, #ffb347);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 800;
+    box-shadow: 0 18px 32px rgba(255, 122, 24, 0.28);
+    animation: emiCtaPulse 2.2s ease-in-out infinite;
+}
+
+.floating-emi-cta:hover,
+.floating-emi-cta:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 40px rgba(255, 122, 24, 0.34);
 }
 
 @keyframes emiCtaPulse {
@@ -742,6 +840,10 @@ article li {
         flex-direction: column;
     }
 
+    .hero-proof-strip {
+        align-items: stretch;
+    }
+
     .btn {
         width: 100%;
         justify-content: center;
@@ -761,6 +863,17 @@ article li {
 
     .emi-card-badge {
         font-size: 0.72rem;
+    }
+
+    .emi-before-after-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .floating-emi-cta {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
     }
 }
 

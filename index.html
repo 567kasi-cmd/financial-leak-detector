@@ -107,11 +107,16 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>Uncover Your Hidden Financial Leaks</h1>
-            <p>Understand how much money you're losing due to interest, fees, and poor financial decisions</p>
+            <h1>You might be losing Rs.2,00,000+ in interest without realizing it.</h1>
+            <p>Use FinLeak to uncover hidden interest leakage, test smarter prepayments, and see how quickly your loan can improve.</p>
             <div class="hero-cta">
-                <button class="btn btn-primary" onclick="document.getElementById('calculator').scrollIntoView({behavior: 'smooth'})">Start Analysis</button>
-                <button class="btn btn-secondary" onclick="document.getElementById('faq').scrollIntoView({behavior: 'smooth'})">Learn More</button>
+                <a class="btn btn-primary" href="/emi-calculator/">Check how much YOU are losing</a>
+                <button class="btn btn-secondary" onclick="document.getElementById('faq').scrollIntoView({behavior: 'smooth'})">See how it works</button>
+            </div>
+            <div class="hero-proof-strip">
+                <span>No signup required</span>
+                <span>Interactive what-if simulations</span>
+                <span>Built on real repayment formulas</span>
             </div>
         </div>
     </section>
@@ -137,6 +142,24 @@
                             <strong>Most users save Rs.1L-Rs.5L by making small prepayments.</strong>
                             <span>Try it yourself in seconds.</span>
                         </div>
+                        <div class="emi-quick-actions">
+                            <p class="emi-quick-title">Try instantly</p>
+                            <div class="emi-quick-buttons">
+                                <button type="button" class="btn btn-primary emi-demo-btn" data-demo-loan="1000000" data-demo-rate="9" data-demo-years="20" data-demo-months="0">Rs.10L Loan</button>
+                                <button type="button" class="btn btn-secondary emi-demo-btn" data-demo-loan="1000000" data-demo-rate="9" data-demo-years="20" data-demo-months="0" data-demo-prepayment="100000">Rs.1L Prepayment</button>
+                            </div>
+                        </div>
+                        <div class="emi-before-after" aria-label="Example EMI savings comparison">
+                            <div class="emi-before-after-row">
+                                <span>Without Prepayment</span>
+                                <strong id="emi-example-without">Rs.0 interest</strong>
+                            </div>
+                            <div class="emi-before-after-row">
+                                <span>With Prepayment</span>
+                                <strong id="emi-example-with">Rs.0 interest</strong>
+                            </div>
+                            <div class="emi-before-after-save" id="emi-example-save">You save Rs.0</div>
+                        </div>
                         <div class="emi-trust-list">
                             <span>Based on real bank formulas</span>
                             <span>Month-by-month simulation</span>
@@ -145,6 +168,10 @@
                         <div class="emi-cta-wrap">
                             <a class="btn btn-secondary emi-cta-btn" href="/emi-calculator/" title="Simulate EMI, interest savings, and loan closure scenarios">Open EMI calculator</a>
                             <p class="emi-cta-note">Try adding a Rs.1L prepayment and see instant savings.</p>
+                        </div>
+                        <div class="emi-curiosity-list">
+                            <p>What if you close your loan 2 years early?</p>
+                            <p>Are you overpaying interest every month?</p>
                         </div>
                     </div>
                     <div class="card">
@@ -445,6 +472,8 @@
             </div>
         </section>
     </main>
+
+    <a class="floating-emi-cta" href="/emi-calculator/" title="Simulate EMI, interest savings, and loan closure scenarios">Try EMI Calculator</a>
 
     <!-- Footer -->
     <footer class="footer">
