@@ -4,6 +4,7 @@ import { validateLoanInputs, validatePrepaymentInputs, validateHypotheticalPrepa
 import { attachSyncedSlider, debounce, formatCurrency, formatDate, setButtonLoading } from '../shared.js';
 
 const presets={home:{rate:8.5,years:20,months:0,amount:5000000},car:{rate:9.25,years:5,months:0,amount:800000},personal:{rate:13.5,years:3,months:0,amount:500000},education:{rate:10.25,years:7,months:0,amount:1200000},business:{rate:14.5,years:10,months:0,amount:2500000}};
+const EMI_QUICK_START_KEY='finleak-emi-quick-start';
 let emiPieChartInstance,principalInterestChartInstance,balanceOverTimeChartInstance,lastSimulationResult=null,hasRenderedOnce=false,hypotheticalAmountInput,hypotheticalDateInput,applyWhatIfToPlanCheckbox;
 const uiState={tenureYears:0,tenureMonthsInput:0,userEnteredTenureYears:0,userEnteredTenureMonths:0,tenureTouched:false};
 let suspendTenureTracking=false;
@@ -33,11 +34,43 @@ function init(){
   if($('loan-start-date')&&!$('loan-start-date').value) $('loan-start-date').value=new Date().toISOString().split('T')[0];
   if(tenureYearsInput) tenureYearsInput.addEventListener('input',()=>updateTenureState('input'));
   if(tenureMonthsInput) tenureMonthsInput.addEventListener('input',()=>updateTenureState('input'));
-  setupExperience(); addPrepaymentInput(); applyLoanPreset();
+  setupExperience(); addPrepaymentInput(); applyLoanPreset(); applyHomepageQuickStart();
   displayMessage('info','Add real prepayments in the Actual Plan section. Use the simulation section separately to test an idea before applying it.','prepayment-tip');
   if(hypotheticalAmountInput){hypotheticalAmountInput.addEventListener('blur',()=>normalizeInput(hypotheticalAmountInput)); hypotheticalAmountInput.addEventListener('input',debounce(onAdvisorInputChange,150));}
   if(hypotheticalDateInput) hypotheticalDateInput.addEventListener('input',debounce(onAdvisorInputChange,150));
   form.addEventListener('input',debounce((event)=>{const t=event.target; if(!t) return; if(['hypothetical-prepayment-amount','hypothetical-prepayment-date','apply-what-if-to-plan','scenario-reduce-tenure','scenario-reduce-emi'].includes(t.id)) return; if(hasRenderedOnce) runSimulation();},300));
+}
+
+function applyHomepageQuickStart(){
+  const raw=sessionStorage.getItem(EMI_QUICK_START_KEY);
+  if(!raw) return;
+  sessionStorage.removeItem(EMI_QUICK_START_KEY);
+  try{
+    const quickStart=JSON.parse(raw);
+    const startDate=new Date();
+    const prepaymentDate=new Date(startDate);
+    prepaymentDate.setMonth(prepaymentDate.getMonth()+12);
+    if($('loan-type')) $('loan-type').value='home';
+    [['loan-amount',Math.round(Number(quickStart.loanAmount)||0)],['interest-rate',Number(quickStart.interestRate)||0]].forEach(([id,v])=>{if($(id)){$(id).value=String(v); $(id).dispatchEvent(new Event('input',{bubbles:true}));}});
+    suspendTenureTracking=true;
+    if($('loan-tenure-years')){$('loan-tenure-years').value=String(Math.max(0,Math.round(Number(quickStart.tenureYears)||0))); $('loan-tenure-years').dispatchEvent(new Event('input',{bubbles:true}));}
+    if($('loan-tenure-months')){$('loan-tenure-months').value=String(Math.max(0,Math.round(Number(quickStart.tenureMonths)||0))); $('loan-tenure-months').dispatchEvent(new Event('input',{bubbles:true}));}
+    suspendTenureTracking=false;
+    updateTenureState('input');
+    if($('loan-start-date')) $('loan-start-date').value=startDate.toISOString().split('T')[0];
+    document.querySelectorAll('.prepayment-item').forEach((item,index)=>{if(index>0) item.remove();});
+    const firstPrepayment=document.querySelector('.prepayment-item');
+    if(firstPrepayment){
+      const amountInput=firstPrepayment.querySelector('.prepayment-item-amount');
+      const dateInput=firstPrepayment.querySelector('.prepayment-item-date');
+      if(amountInput) amountInput.value=quickStart.prepaymentAmount?String(Math.round(Number(quickStart.prepaymentAmount)||0)):'';
+      if(dateInput) dateInput.value=quickStart.prepaymentAmount?prepaymentDate.toISOString().split('T')[0]:'';
+    }
+    displayMessage('success','Quick start loaded: review the demo loan and run the simulator to see the impact instantly.','prepayment-tip');
+    setTimeout(()=>runSimulation({scrollToResults:true}),0);
+  }catch(error){
+    console.warn('Unable to apply homepage quick start',error);
+  }
 }
 
 function applyLoanPreset(){
