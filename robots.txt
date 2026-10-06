@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://financial-leak-detector.pages.dev/sitemap.xml
-
+Sitemap: https://financial-leak-detector.site/sitemap.xml

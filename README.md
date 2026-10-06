@@ -6,7 +6,7 @@ Static, client-side financial tools for analyzing:
 - loan EMI and amortization
 - subscription spending leaks
 
-Live site: https://financial-leak-detector.pages.dev/
+Live site: https://financial-leak-detector.site/
 
 ## Project Overview
 
@@ -62,6 +62,7 @@ Then open:
 
 This repo is deployed as a static site on Cloudflare Pages.
 Pushes to `main` trigger auto-deployment.
+The production custom domain is `financial-leak-detector.site` and should be attached in the Cloudflare Pages project settings.
 
 ```powershell
 Set-Location "C:\Users\07kas\IdeaProjects\financial-leak-detector"
@@ -82,18 +83,18 @@ The site now includes:
 After deployment, submit the site to Google Search Console:
 
 1. Open Google Search Console.
-2. Add the property `https://financial-leak-detector.pages.dev/`.
+2. Add the property `https://financial-leak-detector.site/`.
 3. Verify ownership using your preferred method (HTML tag, DNS, or provider-supported flow).
 4. Submit the sitemap:
 
-   - `https://financial-leak-detector.pages.dev/sitemap.xml`
+   - `https://financial-leak-detector.site/sitemap.xml`
 
 5. Use URL Inspection to request indexing for:
 
-   - `https://financial-leak-detector.pages.dev/`
-   - `https://financial-leak-detector.pages.dev/credit-card-leak/`
-   - `https://financial-leak-detector.pages.dev/emi-calculator/`
-   - `https://financial-leak-detector.pages.dev/subscription-leak/`
+   - `https://financial-leak-detector.site/`
+   - `https://financial-leak-detector.site/credit-card-leak/`
+   - `https://financial-leak-detector.site/emi-calculator/`
+   - `https://financial-leak-detector.site/subscription-leak/`
 
 Recommended monitoring inside Search Console:
 
@@ -102,12 +103,19 @@ Recommended monitoring inside Search Console:
 - **Performance**: review impressions, queries, CTR, and top landing pages
 - **Enhancements / Rich results**: validate structured data eligibility where applicable
 
+Cloudflare Pages production checklist:
+
+- Add `financial-leak-detector.site` as a custom domain in the Pages project.
+- Point DNS to Cloudflare using the records Pages provides.
+- Keep the `pages.dev` URL active until the custom domain returns a healthy HTTPS response.
+- Use `https://financial-leak-detector.site/` as the canonical Search Console property after DNS is live.
+
 ## Traffic Growth Ideas
 
 - Publish one supporting article or FAQ expansion per calculator around a single target query.
 - Improve titles and meta descriptions based on queries that appear in Search Console.
 - Add backlinks from relevant profiles, communities, and personal portfolio pages.
-- Consider moving from the default `pages.dev` URL to a custom domain for stronger branding and trust.
+- Keep the custom domain live and canonical for stronger branding and trust.
 - Keep internal links between the calculator pages strong so users and search engines discover all tools.
 
 ## Environment Variables

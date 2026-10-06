@@ -839,33 +839,3 @@ export function simulateLoan(
     chartData,
   };
 }
-
-// Example Usage:
-/*
-const loanDetails: LoanInput = {
-  loanAmount: 2000000, // 20 Lakhs
-  annualInterestRate: 0.085, // 8.5%
-  loanTenureMonths: 240, // 20 years
-  loanStartDate: new Date('2023-03-01'),
-};
-
-const existingPrepayments: Prepayment[] = [
-  { amount: 50000, date: new Date('2023-12-15') },
-  { amount: 25000, date: new Date('2024-06-01') },
-];
-
-const hypotheticalPrepayment: Prepayment = { amount: 100000, date: new Date('2024-10-20') };
-
-const simulationResult = simulateLoan(
-  loanDetails,
-  existingPrepayments,
-  new Date('2024-08-01'), // Current date for progress
-  hypotheticalPrepayment
-);
-
-console.log(JSON.stringify(simulationResult, null, 2));
-
-// You can also test individual functions
-// const emi = calculateEMI(100000, 0.08, 120);
-// console.log(`EMI: ${emi}`);
-*/
