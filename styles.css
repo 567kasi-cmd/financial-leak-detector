@@ -58,6 +58,10 @@ body {
     gap: 2rem;
 }
 
+.nav-toggle {
+    display: none;
+}
+
 .nav-links a {
     text-decoration: none;
     color: var(--text);
@@ -1840,26 +1844,53 @@ article li {
 
 @media (max-width: 768px) {
     .nav-container {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        position: relative;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.65rem 1rem;
     }
 
     .logo {
         font-size: 1.25rem;
     }
 
-    .nav-links {
+    .nav-toggle {
+        display: inline-flex;
         align-items: center;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 0.35rem 1rem;
+        justify-content: center;
+        margin-left: auto;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid #dce3ea;
+        border-radius: 8px;
+        background: white;
+        color: var(--text);
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        flex-direction: column;
+        gap: 0;
+        padding: 0.5rem 1rem 0.75rem;
+        background: white;
+        box-shadow: var(--shadow);
+    }
+
+    .nav-links.is-open {
+        display: flex;
     }
 
     .nav-links a {
         display: block;
-        padding: 0.25rem 0;
+        padding: 0.65rem 0;
     }
 
     .container {

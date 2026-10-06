@@ -83,13 +83,17 @@
             ]
         }
     </script>
+    <script src="/nav.js" defer></script>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <a class="logo" href="/">💰 FinLeak</a>
-            <ul class="nav-links">
+            <button class="nav-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false">
+                Menu
+            </button>
+            <ul class="nav-links" id="primary-navigation">
                 <li><a href="/">Home</a></li>
                 <li><a href="/credit-card-leak/">Credit Card</a></li>
                 <li><a href="/emi-calculator/">EMI Calculator</a></li>
